@@ -1,47 +1,34 @@
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::thread;
-use std::time::Duration;
+use futures::stream::StreamExt;
+use tokio::net::TcpListener;
+use tokio::prelude::*;
 
-fn main() {
-    let listener = TcpListener::bind("192.168.10.14:80").unwrap();
+use std::env;
 
-    for con in listener.incoming() {
-        thread::spawn(|| connection_handle(con.unwrap()));
-    }
-}
-
-fn connection_handle(mut stream: TcpStream) {
-    let mut buffer = vec![0; 512];
-    stream.read(&mut buffer).unwrap();
-    // unsafe {
-    //     println!("ReqUeST: {}", String::from_utf8_unchecked(buffer));
-    // }
-    if buffer.starts_with(b"GET / HTTP/1.1\r\n") {
-        stream
-            .write(
-                ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n".to_string()
-                    + &std::fs::read_to_string("l.html").unwrap())
-                    .as_bytes(),
-            )
-            .unwrap();
-    } else if buffer.starts_with(b"GET /sleep HTTP/1.1\r\n") {
-        thread::sleep(Duration::from_secs(5));
-        stream
-            .write(
-                ("HTTP/1.1 200 OK\r\n\r\n".to_string()
-                    + &std::fs::read_to_string("l.html").unwrap())
-                    .as_bytes(),
-            )
-            .unwrap();
-    } else {
-        stream
-            .write(
-                ("HTTP/1.1 404 NOT FOUND\r\n\r\n".to_string()
-                    + &std::fs::read_to_string("404.html").unwrap())
-                    .as_bytes(),
-            )
-            .unwrap();
-    }
-    // stream.flush().unwrap();
+#[tokio::main]
+async fn main() {
+    let addr = env::args()
+        .nth(1)
+        .unwrap_or_else(|| "127.0.0.1:8080".to_string());
+    let mut listener = TcpListener::bind(&addr).await.unwrap();
+    let mut incoming = listener.incoming();
+    let server = async move {
+        while let Some(con) = incoming.next().await {
+            match con {
+                Ok(mut socket) => {
+                    println!("Got some connection from {:?}", socket.peer_addr());
+                    tokio::spawn(async move {
+                        let (mut reader, mut writer) = socket.split();
+                        match tokio::io::copy(&mut reader, &mut writer).await {
+                            Ok(amt) => println!("wrote {} bytes", amt),
+                            Err(err) => eprintln!("failed to echo, reason: {:?}", err),
+                        }
+                    });
+                }
+                Err(err) => {
+                    println!("Error on getting connection = {:?}", err);
+                }
+            }
+        }
+    };
+    server.await;
 }
