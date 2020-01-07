@@ -1,34 +1,34 @@
-use futures::stream::StreamExt;
-use tokio::net::TcpListener;
-use tokio::prelude::*;
-
+#[macro_use]
+extern crate log;
 use std::env;
+use std::net::SocketAddr;
+use std::process;
 
-#[tokio::main]
-async fn main() {
-    let addr = env::args()
-        .nth(1)
-        .unwrap_or_else(|| "127.0.0.1:8080".to_string());
-    let mut listener = TcpListener::bind(&addr).await.unwrap();
-    let mut incoming = listener.incoming();
-    let server = async move {
-        while let Some(con) = incoming.next().await {
-            match con {
-                Ok(mut socket) => {
-                    println!("Got some connection from {:?}", socket.peer_addr());
-                    tokio::spawn(async move {
-                        let (mut reader, mut writer) = socket.split();
-                        match tokio::io::copy(&mut reader, &mut writer).await {
-                            Ok(amt) => println!("wrote {} bytes", amt),
-                            Err(err) => eprintln!("failed to echo, reason: {:?}", err),
-                        }
-                    });
-                }
-                Err(err) => {
-                    println!("Error on getting connection = {:?}", err);
-                }
+fn main() {
+    pretty_env_logger::init();
+    let args = env::args();
+    let addr = address_get(args);
+    info!("Address is: {}", addr);
+}
+
+fn address_get(mut args: env::Args) -> SocketAddr {
+    let executable = args.next().unwrap();
+    match args.next() {
+        Some(addr) => match addr.parse() {
+            Ok(socket) => socket,
+            Err(e) => {
+                eprintln!("Error obtaining address: {}", e);
+                process::exit(1);
             }
+        },
+        None => {
+            eprintln!(
+                "No arguments provided.\n\
+                 Usage: {0} {{ip_address:port}}\n\
+                 Example: {0} 127.0.0.1:8080",
+                executable
+            );
+            process::exit(1);
         }
-    };
-    server.await;
+    }
 }
