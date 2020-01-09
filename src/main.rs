@@ -1,23 +1,39 @@
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate lazy_static;
-// use futures::future::lazy;
-#[macro_use]
-extern crate serde_derive;
+use futures::stream::StreamExt;
 // use futures::Future;
-// use hyper::client::HttpConnector;
-use hyper::server::conn::AddrStream;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Method, Request, Response, Server, StatusCode};
-use std::convert::Infallible;
-use std::env;
+// use http;
+use httparse::Request;
 use std::net::SocketAddr;
 use std::process;
-use std::sync::{Arc, RwLock};
 use tera::{Context, Tera};
-use uuid::Uuid;
+use tokio::net::{TcpListener, TcpStream};
+use tokio::prelude::*;
+use tokio::time::{delay_for, Duration};
+#[macro_use]
+extern crate lazy_static;
 
+use std::env;
+
+#[tokio::main]
+async fn main() {
+    let addr = address_get(env::args());
+    let mut listener = TcpListener::bind(&addr).await.unwrap();
+    let mut incoming = listener.incoming();
+    let server = async move {
+        while let Some(con) = incoming.next().await {
+            match con {
+                Ok(socket) => {
+                    println!("Got some connection from {:?}", socket.peer_addr());
+                    let doc = Render::new("link.html".to_string(), Context::new());
+                    tokio::spawn(doc.render(socket));
+                }
+                Err(err) => {
+                    println!("Error on getting connection = {:?}", err);
+                }
+            }
+        }
+    };
+    server.await;
+}
 lazy_static! {
     pub static ref TERA: Tera = match Tera::new("templates/**/*") {
         Ok(t) => t,
@@ -28,52 +44,44 @@ lazy_static! {
     };
 }
 
-#[tokio::main]
-async fn main() {
-    pretty_env_logger::init();
-    let args = env::args();
-    let addr = address_get(args);
-    info!("Address is: {}", addr);
-    let service = make_service_fn(|_: &AddrStream| {
-        async move { Ok::<_, Infallible>(service_fn(move |req: Request<Body>| router(req))) }
-    });
-    let server = Server::bind(&addr).serve(service);
-    if let Err(_) = server.await {
-        process::exit(2);
-    };
+struct Render {
+    template: String,
+    context: Context,
 }
 
-async fn router(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    match (req.method(), req.uri().path()) {
-        (&Method::GET, "/") | (&Method::GET, "/index.html") => index(),
-        _ => four_oh_four(),
+impl Render {
+    pub fn new(template: String, context: Context) -> Self {
+        Render { template, context }
     }
-}
-
-static NOTFOUND: &[u8] = b"Oops! Not Found";
-
-fn four_oh_four() -> Result<Response<Body>, Infallible> {
-    let body = Body::from(NOTFOUND);
-    Ok::<_, Infallible>(
-        Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(body)
-            .unwrap(),
-    )
-}
-
-fn index() -> Result<Response<Body>, Infallible> {
-    let ctx = Context::new();
-    let body = match TERA.render("link.html", &ctx) {
-        Ok(body) => Body::from(body),
-        Err(e) => panic!("Error rendering template: {}", e),
-    };
-    Ok::<_, Infallible>(
-        Response::builder()
-            .status(StatusCode::OK)
-            .body(body)
-            .unwrap(),
-    )
+    pub async fn render(self, mut socket: TcpStream) {
+        let mut buf = [0_u8; 512];
+        let _l = socket.read(&mut buf[..]).await;
+        let mut headers = [httparse::EMPTY_HEADER; 18];
+        let mut req = Request::new(&mut headers);
+        let res = req.parse(&buf);
+        delay_for(Duration::from_secs(5)).await;
+        println!(
+            "{:?} {:?}, {}",
+            req,
+            res,
+            String::from_utf8((&buf[..]).to_vec()).unwrap()
+        );
+        let body = match TERA.render(&self.template, &self.context) {
+            Ok(body) => body,
+            Err(e) => panic!("Error rendering html: {}", e),
+        };
+        if let Err(e) = socket
+            .write_all(
+                ("HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n".to_string()
+                    + &body)
+                    .as_bytes(),
+            )
+            .await
+        {
+            panic!("Error writing response: {}", e);
+        }
+        let _ = socket.shutdown(std::net::Shutdown::Write);
+    }
 }
 
 fn address_get(mut args: env::Args) -> SocketAddr {
