@@ -2,7 +2,9 @@ use futures::stream::StreamExt;
 // use futures::Future;
 // use http;
 use httparse::{Request, Status};
-use serde_json::{self, Value};
+#[macro_use]
+extern crate serde_json;
+use serde_json::Value;
 use std::process;
 use tachyon::utils;
 use tera::{Context, Tera};
@@ -20,12 +22,12 @@ async fn main() {
         while let Some(con) = incoming.next().await {
             match con {
                 Ok(socket) => {
-                    println!("Got some connection from {:?}", socket.peer_addr());
+                    // println!("Got some connection from {:?}", socket.peer_addr());
                     let doc = Render::new("link.html".to_string(), Context::new());
                     tokio::spawn(doc.render(socket));
                 }
                 Err(err) => {
-                    println!("Error on getting connection = {:?}", err);
+                    eprintln!("Error on getting connection = {:?}", err);
                 }
             }
         }
@@ -53,30 +55,39 @@ impl Render {
     }
     pub async fn render(self, mut socket: TcpStream) {
         let mut buf = [0_u8; 512];
-        let _l = socket.read(&mut buf[..]).await;
+        let mut heap_buf: Vec<u8> = Vec::new();
+        let mut char_num = 0;
+        loop {
+            let l = socket.read(&mut buf[..]).await.unwrap();
+            char_num += l;
+            heap_buf.append(&mut buf.to_vec());
+            if l != 512 {
+                break;
+            }
+        }
+
         let mut headers = [httparse::EMPTY_HEADER; 18];
         let mut req = Request::new(&mut headers);
-        let res = req.parse(&buf).unwrap();
+        let res = req.parse(&heap_buf[..]).unwrap();
+        // println!(
+        //     "req: {:?}\n{}",
+        //     req,
+        //     String::from_utf8(heap_buf.clone()).unwrap()
+        // );
+        let mut b: Value = json!(null);
         if let Status::Complete(stop) = res {
-            println!("last char: {}", buf[stop]);
-            if buf[stop] != 0 {
-                let mut i = stop + 1;
-                while buf[i] != 0 {
-                    i += 1;
-                }
-                let b: Value = serde_json::from_slice(&buf[stop..i]).unwrap();
-                println!("{:?}", b);
+            // println!("char len {}", stop);
+            // println!("last char: {}", heap_buf[stop]);
+            heap_buf.truncate(char_num);
+            if heap_buf[stop] != 0 {
+                b = serde_json::from_slice(&heap_buf[stop..]).unwrap();
+                // println!("{:?}", b);
             }
         }
 
         // delay_for(Duration::from_secs(5)).await;
-        println!(
-            "{:?} {:?}, {}",
-            req,
-            res,
-            String::from_utf8((&buf[..]).to_vec()).unwrap()
-        );
-        let body = match TERA.render(&self.template, &self.context) {
+
+        let body = match TERA.render(&self.template, &Context::from_value(b).unwrap()) {
             Ok(body) => body,
             Err(e) => panic!("Error rendering html: {}", e),
         };
