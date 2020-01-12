@@ -52,7 +52,7 @@ pub async fn route(buf: Vec<u8>, socket: TcpStream) {
         Some("raw") => template_read(rqst, socket).await,
         Some("add") => template_add(rqst, socket).await,
         Some("reload") => tera_reload(socket).await,
-        Some(_action) => {}
+        Some(_file) => file_read(rqst, socket).await,
         None => {}
     }
 }
@@ -80,8 +80,35 @@ pub async fn template_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStr
     {
         panic!("Error writing response: {}", e);
     }
-    println!("READ DONE! {}", String::from_utf8(content).unwrap());
-    println!("WRITE DONE!");
+    let _ = socket.shutdown(std::net::Shutdown::Write);
+}
+
+pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
+    let content = match tokio::fs::read("templates/".to_string() + rqst.path.unwrap()).await {
+        Ok(content) => content,
+        Err(e) => {
+            panic!("Error reading file {}", e);
+        }
+    };
+    let mime = match rqst.path.unwrap().split('.').last() {
+        Some("js") => "application/js",
+        Some("css") => "text/css",
+        _ => "text/html",
+    };
+    if let Err(e) = socket
+        .write_all(
+            &[
+                "HTTP/1.1 200 OK\r\n".as_bytes(),
+                mime.as_bytes(),
+                "charset=UTF-8\r\n\r\n".as_bytes(),
+                &content[..],
+            ]
+            .concat(),
+        )
+        .await
+    {
+        panic!("Error writing response: {}", e);
+    }
     let _ = socket.shutdown(std::net::Shutdown::Write);
 }
 
