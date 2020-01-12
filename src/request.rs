@@ -28,6 +28,7 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
                 body = Some(std::str::from_utf8(&buf[stop..buf.len()])?);
             }
         }
+        // println!("{}", String::from_utf8(buf.clone()).unwrap());
         let Request {
             method,
             path,
