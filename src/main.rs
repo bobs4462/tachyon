@@ -14,16 +14,15 @@ use tokio::prelude::*;
 #[macro_use]
 extern crate lazy_static;
 
-#[tokio::main(core_threads = 8)]
+#[tokio::main(core_threads = 4)]
 async fn main() {
     let mut listener = TcpListener::bind(utils::address_get()).await.unwrap();
     let mut incoming = listener.incoming();
     let server = async move {
         while let Some(con) = incoming.next().await {
             match con {
-                Ok(mut socket) => {
-                    let buf = HttpRequest::read(&mut socket).await;
-                    tokio::spawn(route(buf, socket));
+                Ok(socket) => {
+                    tokio::spawn(route(socket));
                 }
                 Err(err) => {
                     eprintln!("Error on getting connection = {:?}", err);
@@ -43,7 +42,8 @@ lazy_static! {
     });
 }
 
-pub async fn route(buf: Vec<u8>, socket: TcpStream) {
+pub async fn route(mut socket: TcpStream) {
+    let buf: Vec<u8> = HttpRequest::read(&mut socket).await;
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let rqst = HttpRequest::new(&buf, &mut headers).unwrap();
     let path = rqst.path.clone();
@@ -84,7 +84,7 @@ pub async fn template_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStr
 }
 
 pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
-    let content = match tokio::fs::read("templates/".to_string() + rqst.path.unwrap()).await {
+    let content = match tokio::fs::read("html/".to_string() + rqst.path.unwrap()).await {
         Ok(content) => content,
         Err(e) => {
             panic!("Error reading file {}", e);
@@ -93,6 +93,7 @@ pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream)
     let mime = match rqst.path.unwrap().split('.').last() {
         Some("js") => "application/js",
         Some("css") => "text/css",
+        Some("ico") => "image/vnd.microsoft.icon",
         _ => "text/html",
     };
     if let Err(e) = socket
