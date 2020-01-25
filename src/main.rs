@@ -3,6 +3,7 @@ use futures::stream::StreamExt;
 // #[macro_use]
 extern crate serde_json;
 // use serde_json::Value;
+use async_std::fs;
 use async_std::sync::RwLock;
 use std::process;
 use tachyon::request::HttpRequest;
@@ -10,7 +11,7 @@ use tachyon::utils;
 use tera::{Context, Tera};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
-// use tokio::time::{delay_for, Duration};
+use tokio::time::{delay_for, Duration};
 #[macro_use]
 extern crate lazy_static;
 
@@ -47,11 +48,13 @@ pub async fn route(mut socket: TcpStream) {
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let rqst = HttpRequest::new(&buf, &mut headers).unwrap();
     let path = rqst.path.clone();
+    println!("path: {:?}", path);
     match path.unwrap().split('/').nth(1) {
         Some("render") => render(rqst, socket).await,
         Some("raw") => template_read(rqst, socket).await,
         Some("add") => template_add(rqst, socket).await,
         Some("reload") => tera_reload(socket).await,
+        Some("list") => read_dir(socket).await,
         Some(_file) => file_read(rqst, socket).await,
         None => {}
     }
@@ -91,7 +94,7 @@ pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream)
         }
     };
     let mime = match rqst.path.unwrap().split('.').last() {
-        Some("js") => "application/js",
+        Some("js") => "text/javascript",
         Some("css") => "text/css",
         Some("ico") => "image/vnd.microsoft.icon",
         _ => "text/html",
@@ -99,9 +102,9 @@ pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream)
     if let Err(e) = socket
         .write_all(
             &[
-                "HTTP/1.1 200 OK\r\n".as_bytes(),
+                "HTTP/1.1 200 OK\r\ncontent-type: ".as_bytes(),
                 mime.as_bytes(),
-                "charset=UTF-8\r\n\r\n".as_bytes(),
+                "; charset=UTF-8\r\n\r\n".as_bytes(),
                 &content[..],
             ]
             .concat(),
@@ -169,6 +172,32 @@ pub async fn tera_reload(mut socket: TcpStream) {
     if let Err(e) = socket
         .write_all(
             &"HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\nOK".as_bytes(),
+        )
+        .await
+    {
+        panic!("Error writing response: {}", e);
+    }
+    let _ = socket.shutdown(std::net::Shutdown::Write);
+}
+
+async fn read_dir(mut socket: TcpStream) {
+    let mut entries = fs::read_dir(".").await.unwrap();
+    let mut vec = Vec::new();
+    while let Some(res) = entries.next().await {
+        let entry = res.unwrap();
+        vec.push(entry.file_name().to_string_lossy().to_string());
+    }
+    let vec = serde_json::to_vec(&vec).unwrap();
+
+    if let Err(e) = socket
+        .write_all(
+            &[
+                "HTTP/1.1 200 OK\r\ncontent-type: ".as_bytes(),
+                "application/json".as_bytes(),
+                "charset=UTF-8\r\n\r\n".as_bytes(),
+                &vec.as_slice(),
+            ]
+            .concat(),
         )
         .await
     {

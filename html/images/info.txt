@@ -1,0 +1,14 @@
+
+Hope you enjoy your new logo, here are the people that
+made your beautiful logo happen :)
+font name: Condiment-Regular
+font link: https://fonts.google.com/specimen/Condiment
+font author: Sudtipos
+font author site: https://www.sudtipos.com/
+Slogan Font: Aleo-Light.otf
+
+icon designer: Juan Garces
+icon designer link: /JuanGarces
+        
+{"bg":"#EADEE5","icon-gradient-0":"#3C1143","icon-gradient-1":"#C25178","font":"#240D1B","slogan":"#38212f"}
+      
