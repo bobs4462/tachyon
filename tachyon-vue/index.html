@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<!-- import CSS -->
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		<style>
+html {
+	height: 98%
+}
+
+  #app {
+	  height: 100%;
+	  font-family: 'Roboto Condensed', sans-serif;
+	  font-weight: normal;
+	  font-style: normal;
+	  -webkit-font-smoothing: antialiased;
+	  -moz-osx-font-smoothing: grayscale;
+	  color: #2c3e50;
+  }
+  #app #main_menu {
+	  height: 100%;
+	  padding: none;
+	  background-color: #ffe;
+	  box-shadow: 1px 1px 2px gray;
+  }
+
+  #app #main_menu::-webkit-scrollbar { width: 0 !important }
+  #app #main_menu .el-menu {
+	  background-color: #ffe;
+	  padding: none;
+	  color: #eee;
+  }
+
+  #app #main_menu .el-menu::-webkit-scrollbar { width: 0 !important }
+
+  #app #main_menu .el-menu-item {
+	  color: olive;
+	  height: 40px;
+	  line-height: 40px;
+  }
+  #app #main_menu .el-menu .el-submenu {
+	  color: #fee;
+  }
+		</style>
+	</head>
+	<body style="height: 100%">
+		<div id="app">
+			<el-container style="height: 100%">
+				<el-aside width="240px" id="main_menu">
+					<el-menu
+						size="mini"
+						default-active="2"
+						@open="handleOpen"
+						@close="handleClose">
+						<el-submenu index="1">
+							<template slot="title">
+								<i class="el-icon-eleme"></i>
+								<span>Шаблонизатор</span>
+							</template>
+							<el-menu-item index="1">Отрендерить документ</el-menu-item>
+							<el-menu-item index="2">Добавить новый документ</el-menu-item>
+							<el-menu-item index="3">Просмотр шаблонов</el-menu-item>
+						</el-submenu>
+						<el-submenu index="1">
+							<template slot="title">
+								<i class="el-icon-notebook-1"></i>
+								<span>Документация</span>
+							</template>
+							<el-menu-item index="4">API</el-menu-item>
+							<el-menu-item index="5">Синтаксис</el-menu-item>
+							<el-menu-item index="6">Установка</el-menu-item>
+						</el-submenu>
+					</el-menu>
+				</el-aside>
+			</el-container>
+		</div>
+	</body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.0.2/vue-router.js"></script>
+    <script type="module" src="main.js"></script>
+	<!-- import JavaScript -->
+	<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</html>
+
+

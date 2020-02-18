@@ -5628,7 +5628,7 @@ function appendItem(item, parent, custom) {
   }
 }
 /**
- * Render the item list
+ * RenderTemplate the item list
  * @return {Void}
  */
 
@@ -6257,7 +6257,7 @@ var Selectr = function Selectr(el, config) {
   this.render(config);
 };
 /**
- * Render the instance
+ * RenderTemplate the instance
  * @param  {object} config
  * @return {void}
  */
@@ -13148,7 +13148,7 @@ function () {
       }
     }
     /**
-     * Render the error
+     * RenderTemplate the error
      */
 
   }, {

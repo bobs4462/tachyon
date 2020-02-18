@@ -1,0 +1,5 @@
+const RenderTemplate = `
+
+`
+
+export { RenderTemplate }
