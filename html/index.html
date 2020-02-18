@@ -23,7 +23,7 @@
             <a href="#" class="img logo rounded-circle mb-5" style="background-image: url(images/cover.png);"></a>
             <ul class="list-unstyled components mb-5">
                 <li class="active">
-                    <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Home</a>
+                    <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">DOCS</a>
                     <ul class="collapse list-unstyled" id="homeSubmenu">
                         <li>
                             <a href="#">API DOCUMENTATION</a>
@@ -53,12 +53,6 @@
                             <a href="#">Page 3</a>
                         </li>
                     </ul>
-                </li>
-                <li>
-                    <a href="#">Portfolio</a>
-                </li>
-                <li>
-                    <a href="#">Contact</a>
                 </li>
             </ul>
 
@@ -90,16 +84,16 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <div class="sel sel--black-panther">
-                        <select name="select-profession" id="select-profession">
-                            <option value="" disabled>Profession</option>
-                            <option value="hacker">Hacker</option>
-                            <option value="gamer">Gamer</option>
-                            <option value="developer">Developer</option>
-                            <option value="programmer">Programmer</option>
-                            <option value="designer">Designer</option>
-                        </select>
-                    </div>
+                    <!-- <div class="sel sel--black-panther"> -->
+                    <!--     <select name="select-profession" id="select-profession"> -->
+                    <!--         <option value="" disabled>Profession</option> -->
+                    <!--         <option value="hacker">Hacker</option> -->
+                    <!--         <option value="gamer">Gamer</option> -->
+                    <!--         <option value="developer">Developer</option> -->
+                    <!--         <option value="programmer">Programmer</option> -->
+                    <!--         <option value="designer">Designer</option> -->
+                    <!--     </select> -->
+                    <!-- </div> -->
                     <ul class="nav navbar-nav ml-auto">
                         <li class="nav-item active">
                             <a class="nav-link" href="#">Home</a>
@@ -143,7 +137,7 @@
     function render() {
         let template = document.getElementById('template')
         let xhr = new XMLHttpRequest()
-        xhr.open('POST', 'http://127.0.0.1:8080/raw/form.html')
+        xhr.open('POST', '/raw/form.html')
         let data = JSON.stringify(editor.get())
         xhr.onload = function () {
             if (xhr.status != 200) { // анализируем HTTP-статус ответа, если статус не 200, то произошла ошибка

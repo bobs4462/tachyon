@@ -10,29 +10,21 @@ use tokio::prelude::*;
 
 pub async fn route(mut socket: TcpStream) {
     let buf: Vec<u8> = HttpRequest::read(&mut socket).await;
-    let mut headers = [httparse::EMPTY_HEADER; 18];
+    let mut headers = [httparse::EMPTY_HEADER; 9];
     let rqst = HttpRequest::new(&buf, &mut headers).unwrap();
     let path = rqst.path.clone();
-    let map: HashMap<&'static str, fn(TcpStream) -> BoxFuture<()>> = {
-        let mut map = HashMap::new();
-        map.insert("not_found", not_found as fn(TcpStream) -> BoxFuture<()>);
-        map
-    };
 
-    println!("path: {:?}", path);
     if let None = path {
-        println!("{:?}", String::from_utf8(buf));
-        index(socket).await;
         return;
     }
 
     match path.unwrap().split('/').nth(1) {
-        Some("/") | Some("") => index(socket).await,
+        Some("/") | Some("") => index(rqst, socket).await,
         Some("render") => render(rqst, socket).await,
         Some("raw") => template_read(rqst, socket).await,
         Some("add") => template_add(rqst, socket).await,
-        Some("reload") => tera_reload(socket).await,
-        Some("list") => read_dir(socket).await,
+        Some("reload") => tera_reload(rqst, socket).await,
+        Some("list") => read_dir(rqst, socket).await,
         Some(_file) => file_read(rqst, socket).await,
         None => {}
     }
@@ -46,10 +38,40 @@ lazy_static! {
         }
     });
 }
+lazy_static! {
+    pub static ref ROUTES: HashMap<&'static str, fn(HttpRequest, TcpStream) -> BoxFuture<()>> = {
+        let mut map = HashMap::new();
+        map.insert(
+            "not_found",
+            not_found as fn(HttpRequest, TcpStream) -> BoxFuture<()>,
+        );
+        map.insert("/", index as fn(HttpRequest, TcpStream) -> BoxFuture<()>);
+        map.insert(
+            "render",
+            render as fn(HttpRequest, TcpStream) -> BoxFuture<()>,
+        );
+        map.insert(
+            "raw",
+            template_read as fn(HttpRequest, TcpStream) -> BoxFuture<()>,
+        );
+        map.insert(
+            "add",
+            template_add as fn(HttpRequest, TcpStream) -> BoxFuture<()>,
+        );
+        map.insert(
+            "reload",
+            tera_reload as fn(HttpRequest, TcpStream) -> BoxFuture<()>,
+        );
+        map.insert(
+            "list",
+            read_dir as fn(HttpRequest, TcpStream) -> BoxFuture<()>,
+        );
+        map
+    };
+}
 
 type BoxFuture<T> = std::pin::Pin<std::boxed::Box<dyn Future<Output = T> + std::marker::Send>>;
-pub fn not_found(mut socket: TcpStream) -> BoxFuture<()> {
-    // -> std::pin::Pin<std::boxed::Box<dyn Future<Output = ()> + std::marker::Send>> {
+pub fn not_found(_rqst: HttpRequest, mut socket: TcpStream) -> BoxFuture<()> {
     async move {
         let content = match tokio::fs::read("html/404.html").await {
             Ok(content) => content,
@@ -75,60 +97,66 @@ pub fn not_found(mut socket: TcpStream) -> BoxFuture<()> {
     .boxed()
 }
 
-pub async fn index(mut socket: TcpStream) {
-    let content = match tokio::fs::read("html/index.html").await {
-        Ok(content) => content,
-        Err(e) => {
-            panic!("Error reading file {}", e);
+pub fn index(_rqst: HttpRequest, mut socket: TcpStream) -> BoxFuture<()> {
+    async move {
+        let content = match tokio::fs::read("html/index.html").await {
+            Ok(content) => content,
+            Err(e) => {
+                panic!("Error reading file {}", e);
+            }
+        };
+        if let Err(e) = socket
+            .write_all(
+                &[
+                    "HTTP/1.1 200 OK\r\ncontent-type: text/html".as_bytes(),
+                    "; charset=UTF-8\r\n\r\n".as_bytes(),
+                    &content[..],
+                ]
+                .concat(),
+            )
+            .await
+        {
+            panic!("Error writing response: {}", e);
         }
-    };
-    if let Err(e) = socket
-        .write_all(
-            &[
-                "HTTP/1.1 200 OK\r\ncontent-type: text/html".as_bytes(),
-                "; charset=UTF-8\r\n\r\n".as_bytes(),
-                &content[..],
-            ]
-            .concat(),
-        )
-        .await
-    {
-        panic!("Error writing response: {}", e);
+        let _ = socket.shutdown(std::net::Shutdown::Write);
     }
-    let _ = socket.shutdown(std::net::Shutdown::Write);
+    .boxed()
 }
 
-pub async fn template_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
-    let content = match tokio::fs::read(
-        "templates/".to_string() + rqst.path.unwrap().split('/').last().unwrap(),
-    )
-    .await
-    {
-        Ok(content) => content,
-        Err(e) => {
-            panic!("Error reading file {}", e);
-        }
-    };
-    if let Err(e) = socket
-        .write_all(
-            &[
-                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n".as_bytes(),
-                &content[..],
-            ]
-            .concat(),
+pub fn template_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) -> BoxFuture<()> {
+    async move {
+        let content = match tokio::fs::read(
+            "templates/".to_string() + rqst.path.unwrap().split('/').last().unwrap(),
         )
         .await
-    {
-        panic!("Error writing response: {}", e);
+        {
+            Ok(content) => content,
+            Err(e) => {
+                panic!("Error reading file {}", e);
+            }
+        };
+        if let Err(e) = socket
+            .write_all(
+                &[
+                    "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n".as_bytes(),
+                    &content[..],
+                ]
+                .concat(),
+            )
+            .await
+        {
+            panic!("Error writing response: {}", e);
+        }
+        let _ = socket.shutdown(std::net::Shutdown::Write);
     }
-    let _ = socket.shutdown(std::net::Shutdown::Write);
+    .boxed()
 }
 
 pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
     let content = match tokio::fs::read("html/".to_string() + rqst.path.unwrap()).await {
         Ok(content) => content,
         Err(_) => {
-            not_found(socket).await;
+            not_found(rqst, socket).await;
             return;
         }
     };
@@ -205,7 +233,7 @@ pub async fn render<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
     let _ = socket.shutdown(std::net::Shutdown::Write);
 }
 
-pub async fn tera_reload(mut socket: TcpStream) {
+pub async fn tera_reload<'a, 'b>(_rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
     let mut tera = TERA.write().await;
     tera.full_reload().unwrap();
     if let Err(e) = socket
@@ -219,7 +247,7 @@ pub async fn tera_reload(mut socket: TcpStream) {
     let _ = socket.shutdown(std::net::Shutdown::Write);
 }
 
-async fn read_dir(mut socket: TcpStream) {
+async fn read_dir<'a, 'b>(_rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
     let mut entries = async_std::fs::read_dir(".").await.unwrap();
     let mut vec = Vec::new();
     while let Some(res) = entries.next().await {
