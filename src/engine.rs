@@ -6,7 +6,7 @@ use tokio::net::TcpStream;
 use tokio::prelude::*;
 
 lazy_static! {
-    pub static ref TERA: RwLock<Tera> = RwLock::new(match Tera::new("templates/**/*") {
+    pub static ref TERA: RwLock<Tera> = RwLock::new(match Tera::new("templates-db/**/*") {
         Ok(t) => t,
         Err(e) => {
             eprintln!("Error reading template database {}", e);
@@ -30,6 +30,8 @@ pub async fn reload<'a, 'b>(_rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
 }
 
 pub async fn render<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
+    println!("{:?}", rqst.path);
+    println!("{:?}", rqst.body);
     let tera = TERA.read().await;
     let body = match tera.render(
         rqst.path.unwrap().split('/').last().unwrap(),
