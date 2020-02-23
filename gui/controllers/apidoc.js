@@ -28,13 +28,17 @@ const template = `
 					то, что внутри. Полезно, если у вас есть текст, содержащий разделители.
 				</div>
 				<div>
-					<p><code>{%</code></span><span style="color:#f92672;">raw </span><span style="color:#75715e;"><code>%}</code></p>
+					<p><code>{%</code><span style="color:#f92672;">raw </span><code>%}</code></p>
 					<p><code>Здравствуйте {{</code><code>name}}</code></p>
-					<p><code>{% </span><span style="color:#f92672;">endraw</span><span style="color:#75715e;"><code>%}</code></p>
+					<p><code>{%</code><span style="color:#f92672;">endraw</span><code>%}</code></p>
 				</div>
-
 				<p>будет отображаться как <code>Здравствуйте {{</code><code>name}}</code>.</p>
 			</el-card>
+		</el-card>
+		<el-card>
+			<iframe src="https://tera.netlify.com/docs/" 
+							frameBorder="0"
+							width="100%" height="700px"></iframe>
 		</el-card>
 	</el-main>
 </el-container>
@@ -54,3 +58,4 @@ var ApiDoc = Vue.component("api-doc", {
 	computed: {},
 });
 
+export { ApiDoc }

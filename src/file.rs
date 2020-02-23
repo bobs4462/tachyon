@@ -54,7 +54,7 @@ pub async fn template_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStr
 
 pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
     let path = match rqst.path {
-        Some("") | Some("/") => "/index.html",
+        Some("") | Some("/") | Some("/engine") | Some("/about") => "/index.html",
         Some(path) => path,
         None => panic!("PATH EMPTY"),
     };
@@ -78,7 +78,11 @@ pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream)
             &[
                 "HTTP/1.1 200 OK\r\ncontent-type: ".as_bytes(),
                 mime.as_bytes(),
-                "; charset=UTF-8\r\n\r\n".as_bytes(),
+                "; charset=UTF-8\r\n".as_bytes(),
+                "ETag: \"123123\"\r\n".as_bytes(),
+                "Last-Modified: Sat, 23 Feb 2020 08:15:00 GMT\r\n".as_bytes(),
+                "Expires: Sat, 23 Feb 2021 08:15:00 GMT\r\n".as_bytes(),
+                "cache-control: public, max-age=360000\r\n\r\n".as_bytes(),
                 &content[..],
             ]
             .concat(),

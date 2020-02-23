@@ -20,13 +20,13 @@ body {
 }
 
 .el-header {
-	padding-bottom: 50px;
+	padding-bottom: 90px;
 	padding-top: 20px;
 	line-height: 0.7em;
 	text-align: center;
 	background: #fffff4;
 	color: black;
-	font-size: 30px;
+	font-size: 23px;
 }
 
 .el-menu {

@@ -8,7 +8,7 @@ const App = `
 						 text-color="#fff"
 						 :router="true"
 						 active-text-color="#ffd04b">
-			<el-menu-item>
+			<el-menu-item index="/engine">
 				<template slot="title">
 					<i class="el-icon-picture"></i>
 					<span slot="title">Отрисовка</span>
@@ -51,6 +51,8 @@ const App = `
 	</el-container>
 </el-container>
 	`
+Vue.use(VueRouter)
+Vue.use(VJsoneditor)
 
 var app = new Vue({
 	el: '#app',
@@ -59,6 +61,11 @@ var app = new Vue({
 		return { 
 			lol: 1
 		}
+	},
+	beforeMount() {
+		this.$router.push({path: window.location.pathname})
+			.then(() => {})
+			.catch(() => {})
 	},
 	methods: {
 		save(account) {
