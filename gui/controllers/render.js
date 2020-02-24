@@ -8,6 +8,7 @@ const template = `
 				</v-jsoneditor>
 			</el-card>
 			<el-card style="width: 20%; margin-left: 2%">
+			<el-container direction="vertical">
 				<el-upload 
 							 :before-upload="jsonSet"
 							 action="#"
@@ -18,13 +19,20 @@ const template = `
 							 slot="trigger"
 							 type="success"
 							 size="mini">Загрузить JSON из файла</el-button>
-					<div class="el-upload__tip" slot="tip">формат JSON, размер до 1МБ</div>
+					<div class="el-upload__tip" style="margin-left: 2%" slot="tip">формат JSON, размер до 1МБ</div>
 				</el-upload>
 				<el-select style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template" size="mini">
 					<el-option v-for="t in templates" :key="t" :value="t" :label="t"></el-option>
 				</el-select>
-				<el-button style="margin-top: 7%"
+				<el-button style="margin-top: 7%; margin-bottom: 7%"
+									 icon="el-icon-view"
 									 @click="render" size="mini" type="primary">Сгенерировать документ</el-button>
+
+				<el-button style="margin-left: 0"
+									 icon="el-icon-refresh"
+									 @click="reload"
+									 size="mini" type="danger">Перезагрузить шаблоны</el-button>
+									 </el-container>
 			</el-card>
 		</div>
 	</el-main>
@@ -34,8 +42,8 @@ const template = `
 		size="70%"
 		style="height: 100%"
 		direction="rtl">
-		<el-card style="margin: 2%;">
-			<div style="height: 540px; padding-bottom: 5%; overflow: auto"
+		<el-card style="margin: 1%;">
+			<div style="height: 570px; overflow: auto"
 					 v-html="rendered"></div>
 		</el-card>
 	</el-drawer>
@@ -57,32 +65,47 @@ var Render = Vue.component('render', {
 				name: 'data',
 				modes: ['tree', 'code'],
 			},
-			json: {
-				"front_link": "ponominalu.ru",
-				"name": "Петров Иван Николаевич",
-				"subevent_full_title": "Park-live 2020",
-				"image_wide_clean": "be419aa5c08a0b752a84c3b5725a0d0049cabce1.jpg",
-				"age": 18,
-				"date": "01.01.2020",
-				"venue_title": "Москонцерт Холл",
-				"subevent_type": "open",
-				"unsubscribe_link": "/unsubscribe",
-				"cs": {
-					"phone": "+77777777777777",
-					"email": "johndoe@test.com",
-					"name": "johndoe"
+			test_data: [
+				{
+					"front_link": "ponominalu.ru",
+					"name": "Петров Иван Николаевич",
+					"subevent_full_title": "Park-live 2020",
+					"image_wide_clean": "be419aa5c08a0b752a84c3b5725a0d0049cabce1.jpg",
+					"age": 18,
+					"date": "01.01.2020",
+					"venue_title": "Москонцерт Холл",
+					"subevent_type": "open",
+					"unsubscribe_link": "/unsubscribe",
+					"cs": {
+						"phone": "+77777777777777",
+						"email": "johndoe@test.com",
+						"name": "johndoe"
+					},
+					"rows": []
 				},
-				"rows": []
-			}
+				{
+					"name": "Владимир",
+					"lastname": "Пушин",
+					"numbers": [1,2,3,4,5,9204949,4343,43,43,4,34,32,3]
+				}
+			]
 		}
 	},
 	computed: {
 		height: function() {
 			console.log("height")
-			return window.screen.height * 0.62 + "px"
+			return window.screen.height * 0.63 + "px"
 		},
 		drawer_title: function() {
 			return "Шаблон " + this.template
+		},
+
+		json: function() {
+			if (this.template === 'abandoned.html') {
+				return this.test_data[0]
+			} else if (this.template === 'simplepage.html') {
+				return this.test_data[1]
+			}
 		}
 	},
 
@@ -94,9 +117,7 @@ var Render = Vue.component('render', {
 			}).catch((e) => { this.$message.error(e) })
 	},
 	methods: {
-		onError(e) {
-			this.$message.error(e)
-		},
+		onError(e) { },
 
 		jsonSet(file) {
 			if (file.type !== 'application/json') {
@@ -113,6 +134,13 @@ var Render = Vue.component('render', {
 			}).catch((e) => { this.$message.error(e) })
 		},
 
+		reload() {
+			axios.get("/reload").then(
+				resp => {
+					this.$message.success("Шаблоны успешно перезагружены")
+				}).catch((e) => { this.$message.error(e) })
+		},
+
 		render() {
 			if (!this.template) {
 				this.$message.error("Пожалуйста выберите шаблон")
@@ -123,7 +151,7 @@ var Render = Vue.component('render', {
 					console.log(resp.data)
 					this.rendered = resp.data
 					this.drawer = true
-				}).catch((e) => { console.log(e) })
+				}).catch((e) => { this.$message.error(e)  })
 		},
 
 		log() {

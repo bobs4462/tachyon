@@ -10,6 +10,7 @@ lazy_static! {
         map.insert("html", "text/html");
         map.insert("ico", "image/x-icon");
         map.insert("jpg", "image/jpeg");
+        map.insert("png", "image/png");
         map.insert("js", "application/javascript");
         map.insert("json", "application/json");
         map.insert("odp", "application/vnd.oasis.opendocument.presentation");
@@ -26,6 +27,7 @@ lazy_static! {
         map.insert("xls", "application/vnd.ms-excel");
         map.insert("xml", "application/xml");
         map.insert("zip", "application/zip");
+        map.insert("map", "application/octet-stream");
         map
     };
 }

@@ -1,0 +1,16 @@
+<html>
+	<body>
+		<div style="margin-bottom: 10%">ЭТО САМЫЙ ПРОСТОЙ ПРИМЕР!</div>
+		<div>Здравствуйте {{ name }}</div>
+		{% if lastname == "Путин" %}
+		<div> А вы не президент России </div>
+		{% else %}
+		<div> Ваша фамилия {{ lastname }} </div>
+		{% endif %}
+		<ul>
+			<div>{% for number in numbers %}
+				<li>{{ number }}</li>
+				{% endfor %}</div>
+		</ul>
+	</body>
+</html>

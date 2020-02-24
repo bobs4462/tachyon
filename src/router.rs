@@ -1,25 +1,52 @@
 use super::engine;
 use super::file;
 use super::request::HttpRequest;
+use super::response::Response;
 use tokio::net::TcpStream;
+use tokio::prelude::*;
 
 pub async fn route(mut socket: TcpStream) {
     let buf: Vec<u8> = HttpRequest::read(&mut socket).await;
     let mut headers = [httparse::EMPTY_HEADER; 18];
-    let rqst = HttpRequest::new(&buf, &mut headers).unwrap();
+    let rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
     let path = rqst.path.clone();
 
     if let None = path {
         return;
     }
 
-    match path.unwrap().split('/').nth(1) {
-        Some("render") => engine::render(rqst, socket).await,
-        Some("reload") => engine::reload(rqst, socket).await,
-        Some("raw") => file::template_read(rqst, socket).await,
-        Some("add") => file::template_add(rqst, socket).await,
-        Some("list") => file::template_list(rqst, socket).await,
-        Some(_file) => file::file_read(rqst, socket).await,
-        None => {}
-    }
+    let result = match path.expect("PATH EMPTY").split('/').nth(1) {
+        Some("render") => engine::render(rqst).await,
+        Some("reload") => engine::reload().await,
+        Some("raw") => file::template_read(rqst).await,
+        Some("add") => file::template_add(rqst).await,
+        Some("list") => file::template_list(rqst).await,
+        Some(_file) => file::file_read(rqst).await,
+        _ => panic!("IMPOSSIBLE ERROR: PATH NOT PRESENT"),
+    };
+
+    let response = match result {
+        Ok(ok_response) => ok_response.compose(),
+        Err(e) => build_error_response(e),
+    };
+
+    socket
+        .write_all(&response)
+        .await
+        .expect("FATAL ERROR: FAILED TO WRITE TO STREAM");
+    socket
+        .shutdown(std::net::Shutdown::Write)
+        .expect("FATAL ERROR: FAILED TO CLOSE THE STREAM");
+}
+
+fn build_error_response(e: Box<dyn std::error::Error>) -> Vec<u8> {
+    let response = Response::new(
+        b"500 Internal server error".to_vec(),
+        "Ошибка, обратитесь к системному администратору"
+            .to_string()
+            .into_bytes(),
+        b"text/plain".to_vec(),
+    );
+    eprintln!("{}", e);
+    response.compose()
 }

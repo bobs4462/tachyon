@@ -20,8 +20,8 @@ body {
 }
 
 .el-header {
-	padding-bottom: 90px;
-	padding-top: 20px;
+	padding-bottom: 70px;
+	padding-top: 10px;
 	line-height: 0.7em;
 	text-align: center;
 	background: #fffff4;
@@ -37,7 +37,7 @@ body {
 	margin-bottom: 1%;
 }
 
-.el-image {
+.icon {
 	width: 100px;
 	height: 100px; 
 	border-radius: 50%; 

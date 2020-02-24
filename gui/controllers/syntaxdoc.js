@@ -44,7 +44,7 @@ const template = `
 </el-container>
 
 `
-var ApiDoc = Vue.component("api-doc", {
+var SyntaxDoc = Vue.component("syntax-doc", {
 	template: template,
 	data: function() {
 		return {
@@ -58,4 +58,4 @@ var ApiDoc = Vue.component("api-doc", {
 	computed: {},
 });
 
-export { ApiDoc }
+export { SyntaxDoc }

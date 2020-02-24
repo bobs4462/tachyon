@@ -7,6 +7,7 @@
 				</v-jsoneditor>
 			</el-card>
 			<el-card style="width: 20%; margin-left: 2%">
+			<el-container direction="vertical">
 				<el-upload 
 							 :before-upload="jsonSet"
 							 action="#"
@@ -17,13 +18,20 @@
 							 slot="trigger"
 							 type="success"
 							 size="mini">Загрузить JSON из файла</el-button>
-					<div class="el-upload__tip" slot="tip">формат JSON, размер до 1МБ</div>
+					<div class="el-upload__tip" style="margin-left: 2%" slot="tip">формат JSON, размер до 1МБ</div>
 				</el-upload>
 				<el-select style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template" size="mini">
 					<el-option v-for="t in templates" :key="t" :value="t" :label="t"></el-option>
 				</el-select>
-				<el-button style="margin-top: 7%"
+				<el-button style="margin-top: 7%; margin-bottom: 7%"
+									 icon="el-icon-view"
 									 @click="render" size="mini" type="primary">Сгенерировать документ</el-button>
+
+				<el-button style="margin-left: 0"
+									 icon="el-icon-refresh"
+									 @click="reload"
+									 size="mini" type="danger">Перезагрузить шаблоны</el-button>
+									 </el-container>
 			</el-card>
 		</div>
 	</el-main>
@@ -33,8 +41,8 @@
 		size="70%"
 		style="height: 100%"
 		direction="rtl">
-		<el-card style="margin: 2%;">
-			<div style="height: 540px; padding-bottom: 5%; overflow: auto"
+		<el-card style="margin: 1%;">
+			<div style="height: 570px; overflow: auto"
 					 v-html="rendered"></div>
 		</el-card>
 	</el-drawer>

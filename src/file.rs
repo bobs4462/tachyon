@@ -1,149 +1,72 @@
+use super::error::{Error, ErrorKind};
+use super::mime::MIMES;
 use super::request::HttpRequest;
-// use futures::stream::StreamExt;
-use tokio::net::TcpStream;
+use super::response::Response;
+use futures::stream::StreamExt;
 use tokio::prelude::*;
 
-// pub async fn not_found(mut socket: TcpStream) {
-//     let content = match tokio::fs::read("/404.html").await {
-//         Ok(content) => content,
-//         Err(e) => {
-//             panic!("Error reading file {}", e);
-//         }
-//     };
-//     if let Err(e) = socket
-//         .write_all(
-//             &[
-//                 "HTTP/1.1 404 Not Found\r\ncontent-type: text/html".as_bytes(),
-//                 "; charset=UTF-8\r\n\r\n".as_bytes(),
-//                 &content[..],
-//             ]
-//             .concat(),
-//         )
-//         .await
-//     {
-//         panic!("Error writing response: {}", e);
-//     }
-//     let _ = socket.shutdown(std::net::Shutdown::Write);
-// }
-
-pub async fn template_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
-    let content = match tokio::fs::read(
+pub async fn template_read<'a, 'b>(
+    rqst: HttpRequest<'a, 'b>,
+) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
+    let content = tokio::fs::read(
         "templates-db/".to_string() + rqst.path.unwrap().split('/').last().unwrap(),
     )
-    .await
-    {
-        Ok(content) => content,
-        Err(e) => {
-            panic!("Error reading file {}", e);
-        }
-    };
-    if let Err(e) = socket
-        .write_all(
-            &[
-                "HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\n".as_bytes(),
-                &content[..],
-            ]
-            .concat(),
-        )
-        .await
-    {
-        panic!("Error writing response: {}", e);
-    }
-    let _ = socket.shutdown(std::net::Shutdown::Write);
+    .await?;
+    let response = Response::new(b"200 OK".to_vec(), content, b"text/plain".to_vec());
+    Ok(response)
 }
 
-pub async fn file_read<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
+pub async fn file_read<'a, 'b>(
+    rqst: HttpRequest<'a, 'b>,
+) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
+    println!("{:?}", rqst.path);
     let path = match rqst.path {
-        Some("") | Some("/") | Some("/engine") | Some("/about") => "/index.html",
+        Some("/") | Some("/engine") | Some("/syntax") | Some("/api-docs") | Some("/templates")
+        | Some("/new") => "/index.html",
         Some(path) => path,
-        None => panic!("PATH EMPTY"),
+        None => panic!("IMPOSSIBLE ERROR: PATH EMPTY"),
     };
 
-    println!("{}", path);
-    let content = match tokio::fs::read("gui".to_string() + path).await {
-        Ok(content) => content,
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    };
-    let mime = match rqst.path.unwrap().split('.').last() {
-        Some("js") => "text/javascript",
-        Some("css") => "text/css",
-        Some("ico") => "image/vnd.microsoft.icon",
-        _ => "text/html",
-    };
-    if let Err(e) = socket
-        .write_all(
-            &[
-                "HTTP/1.1 200 OK\r\ncontent-type: ".as_bytes(),
-                mime.as_bytes(),
-                "; charset=UTF-8\r\n".as_bytes(),
-                "ETag: \"123123\"\r\n".as_bytes(),
-                "Last-Modified: Sat, 23 Feb 2020 08:15:00 GMT\r\n".as_bytes(),
-                "Expires: Sat, 23 Feb 2021 08:15:00 GMT\r\n".as_bytes(),
-                "cache-control: public, max-age=360000\r\n\r\n".as_bytes(),
-                &content[..],
-            ]
-            .concat(),
-        )
-        .await
-    {
-        panic!("Error writing response: {}", e);
-    }
-    let _ = socket.shutdown(std::net::Shutdown::Write);
+    let mime = MIMES
+        .get(path.split('.').last().unwrap())
+        .expect("IMPOSSIBLE ERROR: MIME NOT PRESENT IN DB");
+    let content = tokio::fs::read("gui".to_string() + path).await?;
+    let response = Response::new(b"200 OK".to_vec(), content, (*mime).as_bytes().to_vec());
+    Ok(response)
 }
 
-pub async fn template_add<'a, 'b>(rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
-    let mut f = match tokio::fs::File::create(
+pub async fn template_add<'a, 'b>(
+    rqst: HttpRequest<'a, 'b>,
+) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
+    let mut f = tokio::fs::File::create(
         "templates-db/".to_string() + rqst.path.unwrap().split('/').last().unwrap(),
     )
-    .await
-    {
-        Ok(file) => file,
-        Err(e) => {
-            panic!("Error reading file {}", e);
+    .await?;
+    let body = match rqst.body {
+        Some(body) => body.as_bytes(),
+        None => {
+            return Err(Box::new(Error::new(
+                ErrorKind::EmptyBody("Пустое тело запроса".to_string()),
+                None,
+            )))
         }
     };
-    if let Err(e) = f
-        .write_all(&rqst.body.expect("file empty!").as_bytes())
-        .await
-    {
-        panic!("Error writing response: {}", e);
-    }
-    if let Err(e) = socket
-        .write_all(
-            &"HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\nOK".as_bytes(),
-        )
-        .await
-    {
-        panic!("Error writing response: {}", e);
-    }
-    let _ = socket.shutdown(std::net::Shutdown::Write);
+
+    f.write_all(body).await?;
+    let response = Response::new(b"200 OK".to_vec(), b"OK".to_vec(), b"text/plain".to_vec());
+    Ok(response)
 }
 
-pub async fn template_list<'a, 'b>(_rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
+pub async fn template_list<'a, 'b>(
+    _rqst: HttpRequest<'a, 'b>,
+) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
     let mut entries = async_std::fs::read_dir("templates-db").await.unwrap();
     let mut vec = Vec::new();
     while let Some(res) = entries.next().await {
         let entry = res.unwrap();
         vec.push(entry.file_name().to_string_lossy().to_string());
     }
-    let vec = serde_json::to_vec(&vec).unwrap();
-
-    if let Err(e) = socket
-        .write_all(
-            &[
-                "HTTP/1.1 200 OK\r\ncontent-type: ".as_bytes(),
-                "application/json".as_bytes(),
-                "charset=UTF-8\r\n\r\n".as_bytes(),
-                &vec.as_slice(),
-            ]
-            .concat(),
-        )
-        .await
-    {
-        panic!("Error writing response: {}", e);
-    }
-    let _ = socket.shutdown(std::net::Shutdown::Write);
+    let content = serde_json::to_vec(&vec)?;
+    let response = Response::new(b"200 OK".to_vec(), content, b"application/json".to_vec());
+    Ok(response)
 }
