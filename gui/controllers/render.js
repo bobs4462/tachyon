@@ -21,7 +21,9 @@ const template = `
 							 size="mini">Загрузить JSON из файла</el-button>
 					<div class="el-upload__tip" style="margin-left: 2%" slot="tip">формат JSON, размер до 1МБ</div>
 				</el-upload>
-				<el-select style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template" size="mini">
+				<el-select 
+				@change="pick"
+				style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template" size="mini">
 					<el-option v-for="t in templates" :key="t" :value="t" :label="t"></el-option>
 				</el-select>
 				<el-button style="margin-top: 7%; margin-bottom: 7%"
@@ -58,6 +60,7 @@ var Render = Vue.component('render', {
 			template: null,
 			drawer: false,
 			rendered: 'hello world',
+			json: {},
 			options: {
 				sortObjectKeys: true,
 				history: true,
@@ -100,13 +103,6 @@ var Render = Vue.component('render', {
 			return "Шаблон " + this.template
 		},
 
-		json: function() {
-			if (this.template === 'abandoned.html') {
-				return this.test_data[0]
-			} else if (this.template === 'simplepage.html') {
-				return this.test_data[1]
-			}
-		}
 	},
 
 	beforeMount() {
@@ -118,6 +114,14 @@ var Render = Vue.component('render', {
 	},
 	methods: {
 		onError(e) { },
+
+		pick() {
+			if (this.template === 'abandoned.html') {
+				this.json = this.test_data[0]
+			} else if (this.template === 'simplepage.html') {
+				this.json = this.test_data[1]
+			}
+		},
 
 		jsonSet(file) {
 			if (file.type !== 'application/json') {

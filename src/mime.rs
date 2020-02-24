@@ -23,6 +23,7 @@ lazy_static! {
         map.insert("tar", "application/x-tar");
         map.insert("tiff", "image/tiff");
         map.insert("ttf", "font/ttf");
+        map.insert("woff", "font/woff");
         map.insert("xhtml", "application/xhtml+xml");
         map.insert("xls", "application/vnd.ms-excel");
         map.insert("xml", "application/xml");
