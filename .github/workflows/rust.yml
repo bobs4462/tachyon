@@ -13,3 +13,7 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Kill tachyon
+      run:  kill -9 $(cat logs/pid)
+    - name: Run tachyon
+      run: cargo run 10.166.0.2:5001
