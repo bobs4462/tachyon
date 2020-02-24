@@ -14,6 +14,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Kill tachyon
-      run:  kill -9 $(cat logs/pid)
+      run:  if ! kill -9 $(cat logs/pid) > /dev/null 2>&1; then echo "NO PID" > &2 fi
     - name: Run tachyon
       run: cargo run 10.166.0.2:5001
