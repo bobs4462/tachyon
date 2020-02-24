@@ -17,7 +17,10 @@ lazy_static! {
 
 pub async fn reload<'a, 'b>(_rqst: HttpRequest<'a, 'b>, mut socket: TcpStream) {
     let mut tera = TERA.write().await;
-    tera.full_reload().unwrap();
+    match tera.full_reload() {
+        Ok(_) => println!("Tera reloaded"),
+        Err(e) => eprintln!("Error occured during reload: {}", e),
+    }
     if let Err(e) = socket
         .write_all(
             &"HTTP/1.1 200 OK\r\ncontent-type: text/html; charset=UTF-8\r\n\r\nOK".as_bytes(),

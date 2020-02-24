@@ -16,6 +16,7 @@ const template = `
 					<el-button 
 							 icon="el-icon-upload"
 							 slot="trigger"
+							 type="success"
 							 size="mini">Загрузить JSON из файла</el-button>
 					<div class="el-upload__tip" slot="tip">формат JSON, размер до 1МБ</div>
 				</el-upload>
@@ -33,10 +34,10 @@ const template = `
 		size="70%"
 		style="height: 100%"
 		direction="rtl">
-						 <el-card style="margin: 2%; height: 100%">
-				<div style="height: 100%; padding-bottom: 5%; overflow: auto"
-				v-html="rendered"></div>
-						 </el-card>
+		<el-card style="margin: 2%;">
+			<div style="height: 540px; padding-bottom: 5%; overflow: auto"
+					 v-html="rendered"></div>
+		</el-card>
 	</el-drawer>
 </el-container>
 `
@@ -73,8 +74,6 @@ var Render = Vue.component('render', {
 				},
 				"rows": []
 			}
-
-
 		}
 	},
 	computed: {
@@ -115,6 +114,10 @@ var Render = Vue.component('render', {
 		},
 
 		render() {
+			if (!this.template) {
+				this.$message.error("Пожалуйста выберите шаблон")
+				return
+			}
 			axios.post("/render/" + this.template, this.json).then(
 				resp => {
 					console.log(resp.data)

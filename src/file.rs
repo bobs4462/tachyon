@@ -1,5 +1,5 @@
 use super::request::HttpRequest;
-use futures::stream::StreamExt;
+// use futures::stream::StreamExt;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 

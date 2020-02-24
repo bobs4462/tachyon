@@ -1,4 +1,4 @@
-<el-container>
+<el-container style="height: 100%">
 	<el-main style="padding=5%">
 		<div style="display: flex">
 			<el-card style="width: 78%">
@@ -15,6 +15,7 @@
 					<el-button 
 							 icon="el-icon-upload"
 							 slot="trigger"
+							 type="success"
 							 size="mini">Загрузить JSON из файла</el-button>
 					<div class="el-upload__tip" slot="tip">формат JSON, размер до 1МБ</div>
 				</el-upload>
@@ -30,13 +31,11 @@
 		:title="drawer_title"
 		:visible.sync="drawer"
 		size="70%"
+		style="height: 100%"
 		direction="rtl">
-		<el-card style="margin: 3%; min-height: 95%; overflow: auto; height: auto">
-			<div>
-				<div 
-						 style="overflow: auto; height: auto"
-						 v-html="rendered"></div>
-			</div>
+		<el-card style="margin: 2%;">
+			<div style="height: 540px; padding-bottom: 5%; overflow: auto"
+					 v-html="rendered"></div>
 		</el-card>
 	</el-drawer>
 </el-container>
