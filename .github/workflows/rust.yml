@@ -14,4 +14,4 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run tachyon
-      run: cargo run 10.166.0.2:5001
+      run: cargo run 10.166.0.2:5001 &
