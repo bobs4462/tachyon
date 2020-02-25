@@ -2,7 +2,7 @@ import { Render } from "../controllers/render.js"
 import { SyntaxDoc } from "../controllers/syntaxdoc.js"
 import { APIWorkInProgress } from "../controllers/api_work_in_progress.js"
 import { NewWorkInProgress } from "../controllers/new_work_in_progress.js"
-import { TemplatesWorkInProgress } from "../controllers/templates_work_in_progress.js"
+import { Templates } from "../controllers/templates.js"
 
 const routes = [
 	{
@@ -23,7 +23,7 @@ const routes = [
 	},
 	{
 		path: '/templates',
-		component: TemplatesWorkInProgress
+		component: Templates
 	},
 ]
 
