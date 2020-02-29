@@ -43,6 +43,7 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
     }
 
     pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
+        println!("BUFFER SIZE {}", socket.recv_buffer_size().unwrap());
         let mut buf = [0_u8; BUF_SIZE];
         let mut heap_buf: Vec<u8> = Vec::new();
         let mut l;
