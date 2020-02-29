@@ -24,7 +24,7 @@ const template = `
 				<el-select 
 				@change="pick"
 				style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template" size="mini">
-					<el-option v-for="t in templates" :key="t" :value="t" :label="t"></el-option>
+					<el-option v-for="t in templates" :key="t.file" :value="t.file" :label="t.name"></el-option>
 				</el-select>
 				<el-button style="margin-top: 7%; margin-bottom: 7%"
 									 icon="el-icon-view"
@@ -68,30 +68,6 @@ var Render = Vue.component('render', {
 				name: 'data',
 				modes: ['tree', 'code'],
 			},
-			test_data: [
-				{
-					"front_link": "ponominalu.ru",
-					"name": "Петров Иван Николаевич",
-					"subevent_full_title": "Park-live 2020",
-					"image_wide_clean": "be419aa5c08a0b752a84c3b5725a0d0049cabce1.jpg",
-					"age": 18,
-					"date": "01.01.2020",
-					"venue_title": "Москонцерт Холл",
-					"subevent_type": "open",
-					"unsubscribe_link": "/unsubscribe",
-					"cs": {
-						"phone": "+77777777777777",
-						"email": "johndoe@test.com",
-						"name": "johndoe"
-					},
-					"rows": []
-				},
-				{
-					"name": "Владимир",
-					"lastname": "Пушин",
-					"numbers": [1,2,3,4,5,9204949,4343,43,43,4,34,32,3]
-				}
-			]
 		}
 	},
 	computed: {
@@ -102,7 +78,6 @@ var Render = Vue.component('render', {
 		drawer_title: function() {
 			return "Шаблон " + this.template
 		},
-
 	},
 
 	beforeMount() {
@@ -115,12 +90,8 @@ var Render = Vue.component('render', {
 	methods: {
 		onError(e) { },
 
-		pick() {
-			if (this.template === 'abandoned.html') {
-				this.json = this.test_data[0]
-			} else if (this.template === 'simplepage.html') {
-				this.json = this.test_data[1]
-			}
+		pick(file) {
+			this.json = this.templates.find(i => { return i.file === file }).data
 		},
 
 		jsonSet(file) {

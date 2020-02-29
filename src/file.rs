@@ -2,8 +2,19 @@ use super::error::{Error, ErrorKind};
 use super::mime::MIMES;
 use super::request::HttpRequest;
 use super::response::Response;
-use futures::stream::StreamExt;
+use serde::{Deserialize, Serialize};
 use tokio::prelude::*;
+
+const DB: &str = "templates-db/index.json";
+
+#[derive(Serialize, Deserialize)]
+pub struct Template {
+    name: String,
+    file: String,
+    comment: Option<String>,
+    size: u32,
+    data: serde_json::Value,
+}
 
 pub async fn template_read<'a, 'b>(
     rqst: HttpRequest<'a, 'b>,
@@ -16,10 +27,15 @@ pub async fn template_read<'a, 'b>(
     Ok(response)
 }
 
+pub async fn db_parse() -> Result<Vec<Template>, Box<dyn std::error::Error + Sync + Send>> {
+    let content = std::fs::read(DB)?;
+    let templates: Vec<Template> = serde_json::from_slice(&content)?;
+    Ok(templates)
+}
+
 pub async fn file_read<'a, 'b>(
     rqst: HttpRequest<'a, 'b>,
 ) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
-    println!("{:?}", rqst.path);
     let path = match rqst.path {
         Some("/") | Some("/engine") | Some("/syntax") | Some("/api-docs") | Some("/templates")
         | Some("/new") => "/index.html",
@@ -60,13 +76,16 @@ pub async fn template_add<'a, 'b>(
 pub async fn template_list<'a, 'b>(
     _rqst: HttpRequest<'a, 'b>,
 ) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
-    let mut entries = async_std::fs::read_dir("templates-db").await.unwrap();
-    let mut vec = Vec::new();
-    while let Some(res) = entries.next().await {
-        let entry = res.unwrap();
-        vec.push(entry.file_name().to_string_lossy().to_string());
-    }
-    let content = serde_json::to_vec(&vec)?;
+    let db = match db_parse().await {
+        Ok(templates) => templates,
+        Err(e) => {
+            return Err(Box::new(Error::new(
+                ErrorKind::EmptyBody(format!("Ошибка {}", e)),
+                None,
+            )))
+        }
+    };
+    let content = serde_json::to_vec(&db)?;
     let response = Response::new(b"200 OK".to_vec(), content, b"application/json".to_vec());
     Ok(response)
 }

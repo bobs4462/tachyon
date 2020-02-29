@@ -7,6 +7,7 @@ pub struct Error {
 #[derive(Debug)]
 pub enum ErrorKind {
     EmptyBody(String),
+    TemplateExists(String),
 }
 
 impl std::error::Error for Error {
@@ -27,6 +28,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.kind {
             ErrorKind::EmptyBody(ref message) => write!(f, "{}", message),
+            ErrorKind::TemplateExists(ref message) => write!(f, "{}", message),
         }
     }
 }

@@ -26,8 +26,12 @@ pub async fn render<'a, 'b>(
 ) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
     let tera = TERA.read().await;
     let content = tera.render(
-        rqst.path.unwrap().split('/').last().unwrap(),
-        &Context::from_value(serde_json::from_str(rqst.body.unwrap()).unwrap()).unwrap(),
+        rqst.path
+            .expect("NOT PATH SPECIFIED")
+            .split('/')
+            .last()
+            .expect("NO FILE NAME PROVIDED"),
+        &Context::from_value(serde_json::from_str(rqst.body.expect("EMPTY BODY"))?)?,
     )?;
     let response = Response::new(
         b"200 OK".to_vec(),
