@@ -1,9 +1,47 @@
 <el-container>
 	<el-main>
 		<div style="flex">
-			<el-card style="margin: 2%; width: 20%" :key="t" v-for="t in templates">
-				<el-table></el-table>
-		</el-card>
-</div>
+			<el-card style="margin-right: 2%; width: 100%">
+				<el-table :data="templates" ref="T" 
+																		border
+																		stripe @expand-change="templateGet" :max-height="table_height">
+					<el-table-column label="Название" width="250px">
+						<template slot-scope="scope">
+							<div style="word-break: break-word">
+								{{ scope.row.name }}
+							</div>
+						</template>
+					</el-table-column>
+					<el-table-column label="Файл" width="200px">
+						<template slot-scope="scope">
+							<div style="word-break: break-word">
+								{{ scope.row.file }}
+							</div>
+						</template>
+					</el-table-column>
+					<el-table-column label="Комментарий">
+						<template slot-scope="scope">
+							<div style="word-break: break-word">
+								{{ scope.row.comment }}
+							</div>
+						</template>
+					</el-table-column>
+					<el-table-column label="Размер" prop="size" width="70"></el-table-column>
+					<el-table-column label="Шаблон" type="expand" width="90">
+						<template slot-scope="scope">
+							<div>
+								<quill-editor v-model="content"
+															@change="onTemplateChange"
+															:options="editorOption"></quill-editor>
+							</div>
+							<div style="margin-top: 2%; text-align: center">
+								<el-button size="mini" @click="templateSave(scope.row.file)" 
+													 type="primary" icon="el-icon-check">Сохранить изменения</el-button>
+							</div>
+						</template>
+					</el-table-column>
+				</el-table>
+			</el-card>
+		</div>
 	</el-main>
 </el-container>

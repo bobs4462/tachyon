@@ -45,35 +45,14 @@ body {
 	margin-top: 9%;
 }
 
-.avatar-uploader .el-upload {
-	border: 2px dashed #d9d9d9;
-	border-radius: 6px;
-	cursor: pointer;
-	position: relative;
-	overflow: hidden;
-}
 
-.avatar-uploader .el-upload:hover {
-	border-color: #409EFF;
-}
 
-.avatar-uploader-icon {
-	font-size: 32px;
-	color: #8c939d;
-	width: 378px;
-	height: 278px;
-	line-height: 278px;
-	text-align: center;
+.ql-container {
+	height: 300px;
+	overflow: auto;
 }
-
-.avatar {
-	width: 378px;
-	height: 278px;
-	display: block;
+.ql-editor {
+	height: 300px;
+	max-height: 300px;
+	overflow: auto;
 }
-
-.el-upload-list__item {
-	width: 378px;
-	height: 278px;
-}
-

@@ -117,6 +117,7 @@ var Render = Vue.component('render', {
 		},
 
 		render() {
+			console.log(this.json)
 			if (!this.template) {
 				this.$message.error("Пожалуйста выберите шаблон")
 				return

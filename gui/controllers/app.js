@@ -58,6 +58,8 @@ const App = `
 	`
 Vue.use(VueRouter)
 Vue.use(VJsoneditor)
+Vue.use(VuePrismEditor)
+Vue.component('vue-prism-editor', VuePrismEditor)
 
 var app = new Vue({
 	el: '#app',
