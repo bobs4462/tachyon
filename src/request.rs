@@ -23,13 +23,9 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let mut req = Request::new(headers);
         let res = req.parse(&buf[..])?;
-        let mut body = None;
         let mut border: usize = 0;
         if let Status::Complete(stop) = res {
             border = stop;
-            if buf.len() > stop {
-                body = Some(std::str::from_utf8(&buf[stop..buf.len()])?);
-            }
         }
         let Request {
             method,
@@ -41,9 +37,25 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
             method: method,
             path: path,
             headers: headers,
-            body: body,
+            body: None,
             border: border,
         })
+    }
+
+    pub async fn body_read(socket: &mut TcpStream, byte_to_read: usize) -> Vec<u8> {
+        let mut buf = [0_u8; BUF_SIZE];
+        let mut vec = Vec::with_capacity(byte_to_read);
+        let mut _l = 0;
+        let mut total_read = 0;
+        loop {
+            _l = socket.read(&mut buf[..]).await.unwrap();
+            vec.append(&mut buf[.._l].to_vec());
+            total_read += _l;
+            if total_read >= byte_to_read {
+                break;
+            }
+        }
+        vec[..byte_to_read].to_vec()
     }
 
     pub async fn read(socket: &mut TcpStream) -> Vec<u8> {

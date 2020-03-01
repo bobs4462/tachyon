@@ -6,9 +6,15 @@ use tokio::net::TcpStream;
 use tokio::prelude::*;
 
 pub async fn route(mut socket: TcpStream) {
+    let mut buffer = [0_u8; 100000];
+    println!(
+        "BYTES ON SOCKET {:?}",
+        socket.peek(&mut buffer).await.unwrap()
+    );
     let buf: Vec<u8> = HttpRequest::read(&mut socket).await;
     let mut headers = [httparse::EMPTY_HEADER; 18];
-    let rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
+    let mut rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
+    let mut body = b"None".to_vec();
     if let Some(header) = rqst
         .headers
         .iter()
@@ -18,14 +24,15 @@ pub async fn route(mut socket: TcpStream) {
             .unwrap()
             .parse::<usize>()
             .unwrap();
-        if cl != rqst.body.unwrap().len() {
-            let len = rqst.body.unwrap().len();
-            let mut vec = Vec::with_capacity(cl - len);
-            let read = socket.read_exact(&mut vec[..]).await.unwrap();
-            println!("second read {}", read);
+        println!("CL {:?}", cl);
+        if cl > 0 {
+            body = HttpRequest::body_read(&mut socket, cl).await;
+            println!("BODY {:?}", body);
+            rqst.body = Some(std::str::from_utf8(&body[..]).unwrap());
         }
     }
     let path = rqst.path.clone();
+    println!("PATH {:?}", path);
 
     if let None = path {
         return;
