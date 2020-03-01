@@ -14,13 +14,15 @@ pub async fn route(mut socket: TcpStream) {
         .iter()
         .find(|i| i.name.to_lowercase() == "content-length")
     {
-        if String::from_utf8(header.value.to_vec())
+        let cl = String::from_utf8(header.value.to_vec())
             .unwrap()
             .parse::<usize>()
-            .unwrap()
-            == rqst.body.unwrap().len()
-        {
-            println!("OK {}", rqst.body.unwrap().len());
+            .unwrap();
+        if cl != rqst.body.unwrap().len() {
+            let len = rqst.body.unwrap().len();
+            let mut vec = Vec::with_capacity(cl - len);
+            let read = socket.read_exact(&mut vec[..]).await.unwrap();
+            println!("second read {}", read);
         }
     }
     let path = rqst.path.clone();

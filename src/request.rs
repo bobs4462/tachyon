@@ -13,6 +13,7 @@ pub struct HttpRequest<'headers, 'buf: 'headers> {
     pub headers: &'headers mut [Header<'buf>],
     /// The request body.
     pub body: Option<&'buf str>,
+    pub border: usize,
 }
 
 impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
@@ -23,7 +24,9 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
         let mut req = Request::new(headers);
         let res = req.parse(&buf[..])?;
         let mut body = None;
+        let mut border: usize = 0;
         if let Status::Complete(stop) = res {
+            border = stop;
             if buf.len() > stop {
                 body = Some(std::str::from_utf8(&buf[stop..buf.len()])?);
             }
@@ -39,6 +42,7 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
             path: path,
             headers: headers,
             body: body,
+            border: border,
         })
     }
 
