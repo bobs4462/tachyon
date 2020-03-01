@@ -6,40 +6,35 @@ use tokio::net::TcpStream;
 use tokio::prelude::*;
 
 pub async fn route(mut socket: TcpStream) {
-    let mut buffer = [0_u8; 100000];
-    println!(
-        "BYTES ON SOCKET {:?}",
-        socket.peek(&mut buffer).await.unwrap()
-    );
     let buf: Vec<u8> = request::read(&mut socket).await;
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let mut rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
     let mut body = Vec::new();
-    if rqst.border != 0 {
-        body.extend_from_slice(&buf[rqst.border..]);
-    }
-    if let Some(header) = rqst
-        .headers
-        .iter()
-        .find(|i| i.name.to_lowercase() == "content-length")
-    {
-        let cl = String::from_utf8(header.value.to_vec())
-            .unwrap()
-            .parse::<usize>()
-            .unwrap();
-        println!("CL {:?}", cl);
-        loop {
-            if cl > body.len() {
-                body.extend(request::read(&mut socket).await);
-                println!("BODY {:?}", body);
-            } else {
-                break;
+    if rqst.method.unwrap() == "POST" {
+        if let Some(header) = rqst
+            .headers
+            .iter()
+            .find(|i| i.name.to_lowercase() == "content-length")
+        {
+            if rqst.border != 0 {
+                body.extend_from_slice(&buf[rqst.border..]);
             }
+            let cl = String::from_utf8(header.value.to_vec())
+                .unwrap()
+                .parse::<usize>()
+                .unwrap();
+            println!("Content-Length {:?}", cl);
+            loop {
+                if cl > body.len() {
+                    body.extend(request::read(&mut socket).await);
+                } else {
+                    break;
+                }
+            }
+            rqst.body = Some(std::str::from_utf8(&body[..]).unwrap());
         }
-        rqst.body = Some(std::str::from_utf8(&body[..]).unwrap());
     }
     let path = rqst.path.clone();
-    println!("PATH {:?}", path);
 
     if let None = path {
         return;

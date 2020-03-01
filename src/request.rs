@@ -27,6 +27,7 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
         if let Status::Complete(stop) = res {
             border = stop;
         }
+
         let Request {
             method,
             path,
@@ -48,7 +49,6 @@ pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
         "BYTES 2nd ON SOCKET {:?}",
         socket.peek(&mut buffer).await.unwrap()
     );
-    println!("BUFFER SIZE {}", socket.recv_buffer_size().unwrap());
     let mut buf = [0_u8; BUF_SIZE];
     let mut heap_buf: Vec<u8> = Vec::new();
     let mut l;
