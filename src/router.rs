@@ -9,6 +9,20 @@ pub async fn route(mut socket: TcpStream) {
     let buf: Vec<u8> = HttpRequest::read(&mut socket).await;
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
+    if let Some(header) = rqst
+        .headers
+        .iter()
+        .find(|i| i.name.to_lowercase() == "content-length")
+    {
+        if String::from_utf8(header.value.to_vec())
+            .unwrap()
+            .parse::<usize>()
+            .unwrap()
+            == rqst.body.unwrap().len()
+        {
+            println!("OK {}", rqst.body.unwrap().len());
+        }
+    }
     let path = rqst.path.clone();
 
     if let None = path {

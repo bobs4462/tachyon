@@ -1,4 +1,5 @@
 .idea/
 /target
 /gui/js
+/logs
 **/*.rs.bk
