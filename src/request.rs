@@ -41,58 +41,35 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
             border: border,
         })
     }
-
-    pub async fn body_read(socket: &mut TcpStream, byte_to_read: usize) -> Vec<u8> {
-        println!("here!!!");
-        let mut buffer = [0_u8; 100000];
+}
+pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
+    let mut buffer = [0_u8; 100000];
+    println!(
+        "BYTES 2nd ON SOCKET {:?}",
+        socket.peek(&mut buffer).await.unwrap()
+    );
+    println!("BUFFER SIZE {}", socket.recv_buffer_size().unwrap());
+    let mut buf = [0_u8; BUF_SIZE];
+    let mut heap_buf: Vec<u8> = Vec::new();
+    let mut l;
+    loop {
         println!(
             "BYTES 2nd ON SOCKET {:?}",
             socket.peek(&mut buffer).await.unwrap()
         );
-        let mut buf = [0_u8; BUF_SIZE];
-        let mut vec = Vec::with_capacity(byte_to_read);
-        let mut _l = 0;
-        let mut total_read = 0;
-        loop {
-            _l = socket.read(&mut buf[..]).await.unwrap();
-            vec.append(&mut buf[.._l].to_vec());
-            total_read += _l;
-            if total_read >= byte_to_read - 2 {
-                break;
-            }
-        }
-        vec[..byte_to_read].to_vec()
-    }
-
-    pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
-        let mut buffer = [0_u8; 100000];
-        println!(
-            "BYTES 2nd ON SOCKET {:?}",
-            socket.peek(&mut buffer).await.unwrap()
-        );
-        println!("BUFFER SIZE {}", socket.recv_buffer_size().unwrap());
-        let mut buf = [0_u8; BUF_SIZE];
-        let mut heap_buf: Vec<u8> = Vec::new();
-        let mut l;
-        loop {
-            println!(
-                "BYTES 2nd ON SOCKET {:?}",
-                socket.peek(&mut buffer).await.unwrap()
-            );
-            l = socket.read(&mut buf[..]).await.unwrap();
-            if l != BUF_SIZE && heap_buf.len() == 0 {
-                break;
-            } else if l != BUF_SIZE && heap_buf.len() != 0 {
-                heap_buf.append(&mut buf[..l].to_vec());
-                break;
-            } else {
-                heap_buf.append(&mut buf.to_vec());
-            }
-        }
-        if heap_buf.len() > 0 {
-            heap_buf
+        l = socket.read(&mut buf[..]).await.unwrap();
+        if l != BUF_SIZE && heap_buf.len() == 0 {
+            break;
+        } else if l != BUF_SIZE && heap_buf.len() != 0 {
+            heap_buf.append(&mut buf[..l].to_vec());
+            break;
         } else {
-            buf[..l].to_vec()
+            heap_buf.append(&mut buf.to_vec());
         }
+    }
+    if heap_buf.len() > 0 {
+        heap_buf
+    } else {
+        buf[..l].to_vec()
     }
 }
