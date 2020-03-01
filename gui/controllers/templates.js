@@ -93,14 +93,15 @@ var Templates= Vue.component("templates", {
 				}).catch((e) => { console.log(e) })
 		},
 
-		onTemplateChange({ editor, html, text }) {
-			console.log(html)
-		},
-
 		templateSave(file_name) {
-			axios.post(`/add/${this.current_file}`, this.content).then(
+			axios({url: `/add/${this.current_file}`, method: 'PUT', data: this.content}).then(
 				resp => {
-					this.$message.success(`Шаблон ${this.current_file} успешно сохранён`)
+					if (resp.status == 200) {
+						this.$message.success(`Шаблон ${this.current_file} успешно сохранён`)
+						setTimeout(() => { this.reload() }, 1000)
+					} else {
+						this.$message.error(resp.data)
+					}
 				}).catch((e) => { console.log(e) })
 		}
 	},

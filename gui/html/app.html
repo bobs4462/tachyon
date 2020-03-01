@@ -4,7 +4,7 @@
 		<el-menu background-color="#545c64"
 						 text-color="#fff"
 						 :router="true"
-						 v-bind:default-active="active_item"
+						 v-on:select="main_page = false"
 						 active-text-color="#ffd04b">
 			<el-menu-item index="/engine">
 				<template slot="title">
@@ -42,7 +42,7 @@
 				</div>
 			</el-card>
 		</el-header>
-		<el-main>
+		<el-main style="margin-top=3%">
 			<div v-if="main_page">
 				<el-card>
 					<el-image fit="fill" src="images/cover.png"></el-image>

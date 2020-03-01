@@ -5,9 +5,8 @@
 				<div>
 					<vue-prism-editor
 						style="overflow: auto; max-height: 495px; height: 490px"
-						:readonly="disabled"
 						v-model="content"
-						:language="html" code="<html></html>":lineNumbers="true"></vue-prism-editor>
+						:language="html" :lineNumbers="true"></vue-prism-editor>
 				</div>
 				<div style="margin-top: 2%; text-align: center; display: flex">
 					<el-tooltip content="Текст, размер до 1МБ">
@@ -31,8 +30,6 @@
 										 icon="el-icon-refresh"
 										 @click="reload"
 										 size="mini" type="danger">Перезагрузить шаблоны</el-button>
-					<el-switch style="margin-left: 2%; margin-top: 1%" active-text="Блокировать редактор"
-											v-model="disabled"></el-switch>
 				</div>
 
 			</el-card>
@@ -51,8 +48,7 @@
 				</el-card>
 				<el-card style="margin-top: 1%">
 					<v-jsoneditor 
-								 v-model="template.data"
-								 :options="options" :plus="true" :height="height" @error="onError">
+								 v-model="template.data" :options="options" :plus="false" :height="height" @error="onError">
 					</v-jsoneditor>
 					<el-tooltip content="JSON, размер до 1МБ">
 						<el-upload :before-upload="jsonSet"

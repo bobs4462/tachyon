@@ -1,3 +1,4 @@
+const template = `
 <el-container style="height: 100%">
 	<el-main style="padding=5%">
 		<div style="display: flex">
@@ -72,3 +73,104 @@
 		</div>
 	</el-main>
 </el-container>
+`
+
+var New = Vue.component("new", {
+	template: template,
+	data: function() {
+		return {
+			content: null,
+			disabled: false,
+			html: 'html',
+			template: {
+				name: null,
+				file: null,
+				size: 0,
+				comment: null,
+				data: {},
+			},
+			options: {
+				sortObjectKeys: true,
+				history: true,
+				mode: 'code',
+				name: 'data',
+				modes: ['tree', 'code'],
+			},
+		}
+	},
+	mounted() {
+	},
+	methods: {
+		onError(e) { },
+
+		htmlSet(file) {
+			let type = new RegExp(/^text\/*/)
+			if (!type.test(file.type)) {
+				this.$message.error("Тип файла не текстовый")
+				return false
+			}
+			if (file.size > 1048576) {
+				this.$message.error("Размер файла больше 1МБ")
+				return false
+			}
+			file.text().then(resp => {
+				this.content = resp
+				this.template.file = file.name
+			}).catch((e) => { this.$message.error(e) 
+			})
+		},
+
+		jsonSet(file) {
+			if (file.type !== 'application/json') {
+				this.$message.error("Тип файла не json")
+				return false
+			}
+			if (file.size > 1048576) {
+				this.$message.error("Размер файла больше 1МБ")
+				return false
+			}
+			file.text().then(resp => {
+				this.template.data = JSON.parse(resp)
+				return true
+			}).catch((e) => { 
+				this.$message.error(e) 
+			})
+		},
+
+		reload() {
+			axios.get("/reload").then(
+				resp => {
+					this.$message.success("Шаблоны успешно перезагружены")
+				}).catch((e) => { this.$message.error(e) })
+		},
+
+		save() {
+			if (!this.template.name) {
+				this.$message.warning("Введите название шаблона")
+			}
+			if (!this.template.file) {
+				this.$message.warning("Введите название файла")
+			}
+			axios.post(`/add/${this.template.file}`, this.template).then(
+				resp1 => {
+					if (resp1.status === 200) {
+						axios.put(`/add/${this.template.file}`, this.content).then(
+							resp2	=> {
+								if (resp1.status === 200) {
+									this.$message.success("Шаблон успешно сохранён")
+									setTimeout(() => { this.reload() }, 1000)
+								}
+							}).catch((e) => { console.log(e) })
+					}
+				}).catch((e) => { console.log(e) })
+		},
+	},
+
+	computed: {
+		height: function() {
+			return window.screen.height * 0.42 + "px"
+		},
+	},
+});
+
+export { New }

@@ -23,7 +23,7 @@ const template = `
 				</el-upload>
 				<el-select 
 				@change="pick"
-				style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template" size="mini">
+				style="margin-top: 7%" placeholder="Выбрать шаблон" v-model="template_file" size="mini">
 					<el-option v-for="t in templates" :key="t.file" :value="t.file" :label="t.name"></el-option>
 				</el-select>
 				<el-button style="margin-top: 7%; margin-bottom: 7%"
@@ -57,7 +57,7 @@ var Render = Vue.component('render', {
 	data() {
 		return {
 			templates: [],
-			template: null,
+			template_file: null,
 			drawer: false,
 			rendered: 'hello world',
 			json: {},
@@ -73,10 +73,16 @@ var Render = Vue.component('render', {
 	computed: {
 		height: function() {
 			console.log("height")
-			return window.screen.height * 0.63 + "px"
+			return window.screen.height * 0.61 + "px"
 		},
 		drawer_title: function() {
-			return "Шаблон " + this.template
+			let selected = this.templates
+				.find(i => { return i.file === this.template_file })
+			if (selected) {
+				return "Шаблон " + selected.name
+			} else {
+				return "Шаблон без названия"
+			}
 		},
 	},
 
@@ -118,16 +124,19 @@ var Render = Vue.component('render', {
 
 		render() {
 			console.log(this.json)
-			if (!this.template) {
+			if (!this.template_file) {
 				this.$message.error("Пожалуйста выберите шаблон")
 				return
 			}
-			axios.post("/render/" + this.template, this.json).then(
+			axios.post("/render/" + this.template_file, this.json).then(
 				resp => {
-					console.log(resp.data)
+					if (resp.status === 200) {
 					this.rendered = resp.data
 					this.drawer = true
-				}).catch((e) => { this.$message.error(e)  })
+					} else {
+						this.$message.error(resp.data)
+					}
+				}).catch(() => { this.$message.error('Произошла ошибка на стороне сервера')  })
 		},
 
 		log() {

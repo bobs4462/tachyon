@@ -8,6 +8,7 @@ pub struct Error {
 pub enum ErrorKind {
     EmptyBody(String),
     TemplateExists(String),
+    CurrptedDB(String),
 }
 
 impl std::error::Error for Error {
@@ -29,6 +30,7 @@ impl std::fmt::Display for Error {
         match self.kind {
             ErrorKind::EmptyBody(ref message) => write!(f, "{}", message),
             ErrorKind::TemplateExists(ref message) => write!(f, "{}", message),
+            ErrorKind::CurrptedDB(ref message) => write!(f, "{}", message),
         }
     }
 }

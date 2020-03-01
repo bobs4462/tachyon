@@ -47,7 +47,7 @@ const App = `
 		</el-header>
 		<el-main>
 			<div v-if="main_page">
-				<el-card>
+				<el-card style="margin-top:3%">
 					<el-image fit="fill" src="images/cover.png"></el-image>
 				</el-card>
 			</div>
@@ -85,17 +85,6 @@ var app = new Vue({
 	},
 	methods: {
 		save(account) {
-			axios.post("/update", account).then(
-				resp => {
-					if (resp.data.code === 0) {
-						this.$message(
-							{
-								message: "Аккаунт успешно обновлён",
-								type: "success"
-							}
-						);	
-					}
-				}).catch((e) => { console.log(e) }).finally(() => { this.edit_account = false })
 		}
 	},
 	router,

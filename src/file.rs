@@ -12,7 +12,7 @@ pub struct Template {
     name: String,
     file: String,
     comment: Option<String>,
-    size: u32,
+    size: usize,
     data: serde_json::Value,
 }
 
@@ -54,10 +54,7 @@ pub async fn file_read<'a, 'b>(
 pub async fn template_add<'a, 'b>(
     rqst: HttpRequest<'a, 'b>,
 ) -> Result<Response, Box<dyn std::error::Error + Sync + Send>> {
-    let mut f = tokio::fs::File::create(
-        "templates-db/".to_string() + rqst.path.unwrap().split('/').last().unwrap(),
-    )
-    .await?;
+    let file_name = rqst.path.unwrap().split('/').last().unwrap();
     let body = match rqst.body {
         Some(body) => body.as_bytes(),
         None => {
@@ -67,8 +64,32 @@ pub async fn template_add<'a, 'b>(
             )))
         }
     };
-
-    f.write_all(body).await?;
+    let mut db = match db_parse().await {
+        Ok(templates) => templates,
+        Err(e) => {
+            return Err(Box::new(Error::new(
+                ErrorKind::CurrptedDB(format!("Ошибка {}", e)),
+                None,
+            )))
+        }
+    };
+    let template: &mut Template = match db.iter_mut().find(|i| i.file == file_name) {
+        Some(template) => template,
+        None => {
+            let new = serde_json::from_slice(&body)?;
+            db.push(new);
+            db.last_mut().unwrap()
+        }
+    };
+    println!("{}", rqst.method.unwrap());
+    if rqst.method.unwrap() == "PUT" {
+        template.size = body.len();
+        let mut f = tokio::fs::File::create("templates-db/".to_string() + file_name).await?;
+        f.write_all(body).await?;
+    }
+    let mut f = tokio::fs::File::create(DB).await?;
+    f.write_all(&serde_json::to_vec_pretty(&db).unwrap()[..])
+        .await?;
     let response = Response::new(b"200 OK".to_vec(), b"OK".to_vec(), b"text/plain".to_vec());
     Ok(response)
 }
@@ -80,7 +101,7 @@ pub async fn template_list<'a, 'b>(
         Ok(templates) => templates,
         Err(e) => {
             return Err(Box::new(Error::new(
-                ErrorKind::EmptyBody(format!("Ошибка {}", e)),
+                ErrorKind::CurrptedDB(format!("Ошибка {}", e)),
                 None,
             )))
         }

@@ -2,11 +2,13 @@ html {
 	height: 100%;
 	display: inline-block;
 	padding: 0;
+	overflow: auto;
 }
 
 body {
 	height: 100%;
 	margin: 0;
+	overflow: auto;
 }
 
 #app {
@@ -20,18 +22,15 @@ body {
 }
 
 .el-header {
-	padding-bottom: 80px;
-	padding-top: 10px;
+	padding-bottom: 40px;
+	padding-top: 8px;
 	line-height: 0.7em;
 	text-align: center;
 	background: #fffff4;
 	color: black;
-	font-size: 23px;
+	font-size: 21px;
 }
 
-.el-menu {
-	width: 100%;
-}
 
 .el-card {
 	margin-bottom: 1%;
@@ -45,14 +44,3 @@ body {
 	margin-top: 9%;
 }
 
-
-
-.ql-container {
-	height: 300px;
-	overflow: auto;
-}
-.ql-editor {
-	height: 300px;
-	max-height: 300px;
-	overflow: auto;
-}

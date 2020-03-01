@@ -1,0 +1,15 @@
+<html>
+  <body>
+  <h3>В школе учаться дети:</h3>
+  <span>Учит их преподаватель: {{ teacher }}</span
+  <ul>
+   {% for s in students %}<li>Имя: {{ s.name }} | Возраст: {{ s.age }}<br>
+   <strong>Предметы:</strong>
+   <ol>
+   {% for subj in s.subjects %}<li>{{ subj }}</li>{% endfor %}
+   </ol>
+   </li>
+   {% endfor %}
+  </ul>
+  </body>
+</html>

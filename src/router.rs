@@ -10,7 +10,7 @@ pub async fn route(mut socket: TcpStream) {
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let mut rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
     let mut body = Vec::new();
-    if rqst.method.unwrap() == "POST" {
+    if rqst.method.unwrap() == "POST" || rqst.method.unwrap() == "PUT" {
         if let Some(header) = rqst
             .headers
             .iter()
