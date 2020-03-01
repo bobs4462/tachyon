@@ -25,6 +25,7 @@ pub async fn route(mut socket: TcpStream) {
             .parse::<usize>()
             .unwrap();
         println!("CL {:?}", cl);
+        println!("PRESENT {:?}", cl == buf.len() - rqst.border);
         if cl > 0 {
             body = HttpRequest::body_read(&mut socket, cl).await;
             println!("BODY {:?}", body);
