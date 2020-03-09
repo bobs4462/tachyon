@@ -4,6 +4,7 @@ use super::request::{self, HttpRequest};
 use super::response::Response;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
+use tokio::time::{timeout, Duration};
 
 pub async fn route(mut socket: TcpStream) {
     let buf: Vec<u8> = request::read(&mut socket).await;
@@ -40,16 +41,16 @@ pub async fn route(mut socket: TcpStream) {
     }
 
     let result = match path.expect("PATH EMPTY").split('/').nth(1) {
-        Some("render") => engine::render(rqst).await,
-        Some("reload") => engine::reload().await,
-        Some("raw") => file::template_read(rqst).await,
-        Some("add") => file::template_add(rqst).await,
-        Some("list") => file::template_list(rqst).await,
-        Some(_file) => file::file_read(rqst).await,
+        Some("render") => timeout(Duration::from_secs(1), engine::render(rqst)).await,
+        Some("reload") => timeout(Duration::from_secs(1), engine::reload()).await,
+        Some("raw") => timeout(Duration::from_secs(1), file::template_read(rqst)).await,
+        Some("add") => timeout(Duration::from_secs(1), file::template_add(rqst)).await,
+        Some("list") => timeout(Duration::from_secs(1), file::template_list(rqst)).await,
+        Some(_file) => timeout(Duration::from_secs(1), file::file_read(rqst)).await,
         _ => panic!("IMPOSSIBLE ERROR: PATH NOT PRESENT"),
     };
 
-    let response = match result {
+    let response = match result.unwrap() {
         Ok(ok_response) => ok_response.compose(),
         Err(e) => build_error_response(e),
     };
