@@ -44,19 +44,10 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
     }
 }
 pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
-    let mut buffer = [0_u8; 100000];
-    println!(
-        "BYTES 2nd ON SOCKET {:?}",
-        socket.peek(&mut buffer).await.unwrap()
-    );
     let mut buf = [0_u8; BUF_SIZE];
     let mut heap_buf: Vec<u8> = Vec::new();
     let mut l;
     loop {
-        println!(
-            "BYTES 2nd ON SOCKET {:?}",
-            socket.peek(&mut buffer).await.unwrap()
-        );
         l = socket.read(&mut buf[..]).await.unwrap();
         if l != BUF_SIZE && heap_buf.len() == 0 {
             break;

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 lazy_static! {
     pub static ref MIMES: HashMap<&'static str, &'static str> = {
         let mut map = HashMap::new();
+        map.insert("txt", "text/plain");
         map.insert("css", "text/css");
         map.insert("csv", "text/csv");
         map.insert("doc", "application/msword");
