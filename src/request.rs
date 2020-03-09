@@ -49,10 +49,7 @@ pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
     let mut heap_buf: Vec<u8> = Vec::new();
     let mut l;
     loop {
-        l = timeout(Duration::from_secs(2), socket.read(&mut buf[..]))
-            .await
-            .unwrap()
-            .unwrap();
+        l = socket.read(&mut buf[..]).await.unwrap();
         if l != BUF_SIZE && heap_buf.len() == 0 {
             break;
         } else if l != BUF_SIZE && heap_buf.len() != 0 {
