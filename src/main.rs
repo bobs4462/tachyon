@@ -3,7 +3,7 @@ use std::io::Write;
 use tachyon::router::route;
 use tokio::net::TcpListener;
 
-#[tokio::main(core_threads = 4, max_threads = 13)]
+#[tokio::main]
 async fn main() {
     let mut f = std::fs::OpenOptions::new()
         .write(true)

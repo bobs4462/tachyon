@@ -59,7 +59,7 @@ pub async fn route(mut socket: TcpStream) {
         .await
         .expect("FATAL ERROR: FAILED TO WRITE TO STREAM");
     socket
-        .shutdown(std::net::Shutdown::Write)
+        .shutdown(std::net::Shutdown::Both)
         .expect("FATAL ERROR: FAILED TO CLOSE THE STREAM");
 }
 
