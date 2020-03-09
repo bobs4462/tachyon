@@ -7,7 +7,7 @@ use tokio::prelude::*;
 use tokio::time::{timeout, Duration};
 
 pub async fn route(mut socket: TcpStream) {
-    let buf: Vec<u8> = timeout(Duration::from_secs(1), request::read(&mut socket))
+    let buf: Vec<u8> = timeout(Duration::from_secs(5), request::read(&mut socket))
         .await
         .unwrap();
     let mut headers = [httparse::EMPTY_HEADER; 18];
@@ -29,7 +29,7 @@ pub async fn route(mut socket: TcpStream) {
             loop {
                 if cl > body.len() {
                     body.extend(
-                        timeout(Duration::from_secs(1), request::read(&mut socket))
+                        timeout(Duration::from_secs(5), request::read(&mut socket))
                             .await
                             .unwrap(),
                     );
