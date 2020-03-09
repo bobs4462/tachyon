@@ -2,6 +2,7 @@ use httparse::{Header, Request, Status};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 const BUF_SIZE: usize = 4096;
+use tokio::time::{timeout, Duration};
 
 #[derive(Debug)]
 pub struct HttpRequest<'headers, 'buf: 'headers> {
@@ -48,7 +49,10 @@ pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
     let mut heap_buf: Vec<u8> = Vec::new();
     let mut l;
     loop {
-        l = socket.read(&mut buf[..]).await.unwrap();
+        l = timeout(Duration::from_secs(2), socket.read(&mut buf[..]))
+            .await
+            .unwrap()
+            .unwrap();
         if l != BUF_SIZE && heap_buf.len() == 0 {
             break;
         } else if l != BUF_SIZE && heap_buf.len() != 0 {

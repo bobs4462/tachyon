@@ -4,7 +4,7 @@ use super::request::{self, HttpRequest};
 use super::response::Response;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
-use tokio::time::{timeout, Duration};
+// use tokio::time::{timeout, Duration};
 
 pub async fn route(mut socket: TcpStream) {
     let buf: Vec<u8> = request::read(&mut socket).await;
@@ -26,11 +26,7 @@ pub async fn route(mut socket: TcpStream) {
                 .unwrap();
             loop {
                 if cl > body.len() {
-                    body.extend(
-                        timeout(Duration::from_secs(5), request::read(&mut socket))
-                            .await
-                            .unwrap(),
-                    );
+                    body.extend(request::read(&mut socket).await);
                 } else {
                     break;
                 }
