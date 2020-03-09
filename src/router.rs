@@ -23,7 +23,6 @@ pub async fn route(mut socket: TcpStream) {
                 .unwrap()
                 .parse::<usize>()
                 .unwrap();
-            println!("Content-Length {:?}", cl);
             loop {
                 if cl > body.len() {
                     body.extend(request::read(&mut socket).await);
