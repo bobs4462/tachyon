@@ -45,17 +45,14 @@ impl<'a, 'b: 'a> HttpRequest<'a, 'b> {
     }
 }
 pub async fn read(socket: &mut TcpStream) -> Vec<u8> {
-    const MAX_TRIES: u8 = 5;
-    let mut reads_tried: u8 = 0;
     let mut buf = [0_u8; BUF_SIZE];
     let mut heap_buf: Vec<u8> = Vec::new();
     let mut l;
     loop {
-        if reads_tried == MAX_TRIES {
-            panic!("MAX TRIES excceeded");
-        }
-        reads_tried += 1;
         l = socket.read(&mut buf[..]).await.unwrap();
+        if l == 0 {
+            return Vec::new();
+        }
         if l != BUF_SIZE && heap_buf.len() == 0 {
             break;
         } else if l != BUF_SIZE && heap_buf.len() != 0 {

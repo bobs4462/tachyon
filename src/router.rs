@@ -26,7 +26,11 @@ pub async fn route(mut socket: TcpStream) {
                 .unwrap();
             loop {
                 if cl > body.len() {
-                    body.extend(request::read(&mut socket).await);
+                    let data = request::read(&mut socket).await;
+                    if data.len() == 0 {
+                        break;
+                    }
+                    body.extend(&data);
                 } else {
                     break;
                 }
