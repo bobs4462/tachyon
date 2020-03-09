@@ -7,7 +7,9 @@ use tokio::prelude::*;
 use tokio::time::{timeout, Duration};
 
 pub async fn route(mut socket: TcpStream) {
-    let buf: Vec<u8> = request::read(&mut socket).await;
+    let buf: Vec<u8> = timeout(Duration::from_secs(1), request::read(&mut socket))
+        .await
+        .unwrap();
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let mut rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
     let mut body = Vec::new();
@@ -26,7 +28,11 @@ pub async fn route(mut socket: TcpStream) {
                 .unwrap();
             loop {
                 if cl > body.len() {
-                    body.extend(request::read(&mut socket).await);
+                    body.extend(
+                        timeout(Duration::from_secs(1), request::read(&mut socket))
+                            .await
+                            .unwrap(),
+                    );
                 } else {
                     break;
                 }
@@ -41,16 +47,16 @@ pub async fn route(mut socket: TcpStream) {
     }
 
     let result = match path.expect("PATH EMPTY").split('/').nth(1) {
-        Some("render") => timeout(Duration::from_secs(1), engine::render(rqst)).await,
-        Some("reload") => timeout(Duration::from_secs(1), engine::reload()).await,
-        Some("raw") => timeout(Duration::from_secs(1), file::template_read(rqst)).await,
-        Some("add") => timeout(Duration::from_secs(1), file::template_add(rqst)).await,
-        Some("list") => timeout(Duration::from_secs(1), file::template_list(rqst)).await,
-        Some(_file) => timeout(Duration::from_secs(1), file::file_read(rqst)).await,
+        Some("render") => engine::render(rqst).await,
+        Some("reload") => engine::reload().await,
+        Some("raw") => file::template_read(rqst).await,
+        Some("add") => file::template_add(rqst).await,
+        Some("list") => file::template_list(rqst).await,
+        Some(_file) => file::file_read(rqst).await,
         _ => panic!("IMPOSSIBLE ERROR: PATH NOT PRESENT"),
     };
 
-    let response = match result.unwrap() {
+    let response = match result {
         Ok(ok_response) => ok_response.compose(),
         Err(e) => build_error_response(e),
     };
