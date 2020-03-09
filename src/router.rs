@@ -7,9 +7,7 @@ use tokio::prelude::*;
 use tokio::time::{timeout, Duration};
 
 pub async fn route(mut socket: TcpStream) {
-    let buf: Vec<u8> = timeout(Duration::from_secs(5), request::read(&mut socket))
-        .await
-        .unwrap();
+    let buf: Vec<u8> = request::read(&mut socket).await;
     let mut headers = [httparse::EMPTY_HEADER; 18];
     let mut rqst = HttpRequest::new(&buf, &mut headers).expect("COULDN'T CREATE REQUEST");
     let mut body = Vec::new();
