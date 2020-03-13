@@ -70,9 +70,10 @@ A web-templating system with a RESTful API
 * Продолжительность прецедента: 40 ак.часа = 30 нормочаса
 
 ### 11. Диаграмма uml use case
-
-
+![none](https://github.com/bobs4462/tachyon/blob/master/docs/images/uml_use_case.png)
 # Лабораторная работа №2
 
 ### 1. Диаграмма uml use class
+![none](https://github.com/bobs4462/tachyon/blob/master/docs/images/uml_class.png)
+
 
