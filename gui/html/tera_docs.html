@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en-gb">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Tera - A template engine for Rust inspired by Jinja2 and Django templates">
+        <meta name="author" content="Vincent Prouillet">
+        <title>Tera</title>
+        <link rel="stylesheet" href="https:&#x2F;&#x2F;tera.netlify.com&#x2F;app.css?t=1583663522"/>
+    </head>
+    <body>
+    <div class="container">
+</span></pre><h1 id="templates">Templates<a class="zola-anchor" href="#templates" aria-label="Anchor link for: templates">🔗</a></h1>
+<h2 id="introduction">Introduction<a class="zola-anchor" href="#introduction" aria-label="Anchor link for: introduction">🔗</a></h2>
+<h3 id="tera-basics">Tera Basics<a class="zola-anchor" href="#tera-basics" aria-label="Anchor link for: tera-basics">🔗</a></h3>
+<p>A Tera template is just a text file where variables and expressions get replaced with values
+when it is rendered. The syntax is based on Jinja2 and Django templates.</p>
+<p>There are 3 kinds of delimiter and those cannot be changed:</p>
+<ul>
+<li><code>{{</code> and <code>}}</code> for expressions</li>
+<li><code>{%</code> or <code>{%-</code> and <code>%}</code> or <code>-%}</code> for statements</li>
+<li><code>{#</code> and <code>#}</code> for comments</li>
+</ul>
+<h3 id="raw">Raw<a class="zola-anchor" href="#raw" aria-label="Anchor link for: raw">🔗</a></h3>
+<p>Tera will consider all text inside the <code>raw</code> block as a string and won't try to
+render what's inside. Useful if you have text that contains Tera delimiters.</p>
+<pre style="background-color:#272822;">
+<span style="color:#75715e;">{% </span><span style="color:#f92672;">raw </span><span style="color:#75715e;">%}
+  Hello {{ name }}
+{% </span><span style="color:#f92672;">endraw </span><span style="color:#75715e;">%}
+</span></pre>
+<p>would be rendered as <code>Hello {{ name }}</code>.</p>
+<h3 id="whitespace-control">Whitespace control<a class="zola-anchor" href="#whitespace-control" aria-label="Anchor link for: whitespace-control">🔗</a></h3>
+<p>Tera comes with easy to use whitespace control: use <code>{%-</code> if you want to remove all whitespace
+before a statement and <code>-%}</code> if you want to remove all whitespace after.</p>
+<p>For example, let's look at the following template:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;"> 2 %}
+{{ my_var }}
+</span></pre>
+<p>will have the following output:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">
+2
+</span></pre>
+<p>If we want to get rid of the empty line, we can write the following:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;"> 2 -%}
+{{ my_var }}
+</span></pre><h3 id="comments">Comments<a class="zola-anchor" href="#comments" aria-label="Anchor link for: comments">🔗</a></h3>
+<p>To comment out part of the template, wrap it in <code>{# #}</code>. Anything in between those tags
+will not be rendered.</p>
+<pre style="background-color:#272822;">
+<span style="color:#75715e;">{# A comment #}
+</span></pre><h2 id="data-structures">Data structures<a class="zola-anchor" href="#data-structures" aria-label="Anchor link for: data-structures">🔗</a></h2>
+<h3 id="literals">Literals<a class="zola-anchor" href="#literals" aria-label="Anchor link for: literals">🔗</a></h3>
+<p>Tera has a few literals that can be used:</p>
+<ul>
+<li>booleans: <code>true</code> and <code>false</code></li>
+<li>integers</li>
+<li>floats</li>
+<li>strings: text delimited by <code>&quot;&quot;</code>, <code>''</code> or backticks</li>
+<li>arrays: a list of literals and/or idents by <code>[</code> and <code>]</code> and comma separated (trailing comma allowed)</li>
+</ul>
+<h3 id="variables">Variables<a class="zola-anchor" href="#variables" aria-label="Anchor link for: variables">🔗</a></h3>
+<p>Variables are defined by the context given when rendering a template. If you'd like to define your own variables, see the <a href="https://tera.netlify.com/docs/#assignments">Assignments</a> section.</p>
+<p>You can render a variable by using the <code>{{ name }}</code>.</p>
+<p>Trying to access or render a variable that doesn't exist will result in an error.</p>
+<p>A magical variable is available in every template if you want to print the current context: <code>__tera_context</code>.</p>
+<h4 id="dot-notation">Dot notation:<a class="zola-anchor" href="#dot-notation" aria-label="Anchor link for: dot-notation">🔗</a></h4>
+<p>Construct and attributes can be accessed by using the dot (<code>.</code>) like <code>{{ product.name }}</code>.
+Specific members of an array or tuple are accessed by using the <code>.i</code> notation, where i is a zero-based index.</p>
+<h4 id="square-bracket-notation">Square bracket notation:<a class="zola-anchor" href="#square-bracket-notation" aria-label="Anchor link for: square-bracket-notation">🔗</a></h4>
+<p>A more powerful alternative to (<code>.</code>) is to use square brackets (<code>[ ]</code>).
+Variables can be rendering using the notation <code>{{product['name']}}</code> or <code>{{product[&quot;name&quot;]}}</code>.</p>
+<p>If the item is not in quotes it will be treated as a variable.
+Assuming you have the following objects in your context <code>product = Product{ name: &quot;Fred&quot; }</code>
+and <code>my_field = &quot;name&quot;</code>, calling <code>{{product[my_field]}}</code> will resolve to: <code>{{product.name}}</code>.</p>
+<p>Only variables evaluating to String and Number can be used as index: anything else will be
+an error.</p>
+<h3 id="expressions">Expressions<a class="zola-anchor" href="#expressions" aria-label="Anchor link for: expressions">🔗</a></h3>
+<p>Tera allows expressions almost everywhere.</p>
+<h4 id="math">Math<a class="zola-anchor" href="#math" aria-label="Anchor link for: math">🔗</a></h4>
+<p>You can do some basic math in Tera but it shouldn't be abused other than the occasional <code>+ 1</code> or similar.
+Math operations are only allowed with numbers, using them on any other kind of values will result in an error.
+You can use the following operators:</p>
+<ul>
+<li><code>+</code>: adds 2 values together, <code>{{ 1 + 1 }}</code> will print <code>2</code></li>
+<li><code>-</code>: performs a substraction, <code>{{ 2 - 1 }}</code> will print <code>1</code></li>
+<li><code>/</code>: performs a division, <code>{{ 10 / 2 }}</code> will print <code>5</code></li>
+<li><code>*</code>: performs a multiplication, <code>{{ 5 * 2 }}</code> will print <code>10</code></li>
+<li><code>%</code>: performs a modulo, <code>{{ 2 % 2 }}</code> will print <code>0</code></li>
+</ul>
+<p>The priority of operations is the following, from lowest to highest:</p>
+<ul>
+<li><code>+</code> and <code>-</code></li>
+<li><code>*</code> and <code>/</code> and <code>%</code></li>
+</ul>
+<h4 id="comparisons">Comparisons<a class="zola-anchor" href="#comparisons" aria-label="Anchor link for: comparisons">🔗</a></h4>
+<ul>
+<li><code>==</code>: checks whether the values are equal</li>
+<li><code>!=</code>: checks whether the values are different</li>
+<li><code>&gt;=</code>: true if the left value is equal or greater to the right one</li>
+<li><code>&lt;=</code>: true if the right value is equal or greater to the left one</li>
+<li><code>&gt;</code>: true if the left value is greater than the right one</li>
+<li><code>&lt;</code>: true if the right value is greater than the left one</li>
+</ul>
+<h4 id="logic">Logic<a class="zola-anchor" href="#logic" aria-label="Anchor link for: logic">🔗</a></h4>
+<ul>
+<li><code>and</code>: true if the left and right operands are true</li>
+<li><code>or</code>: true if the left or right operands are true</li>
+<li><code>not</code>: negate a statement</li>
+</ul>
+<h4 id="string-concatenation">String concatenation<a class="zola-anchor" href="#string-concatenation" aria-label="Anchor link for: string-concatenation">🔗</a></h4>
+<p>You can concatenate several strings/idents using the <code>~</code> operator.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ </span><span style="color:#e6db74;">&quot;hello &quot;</span><span style="color:#f8f8f2;"> ~ </span><span style="color:#e6db74;">&#39;world&#39;</span><span style="color:#f8f8f2;"> ~ `!` }}
+
+{{ an_ident ~ </span><span style="color:#e6db74;">&quot; and a string&quot;</span><span style="color:#f8f8f2;"> ~ another_ident }}
+
+{{ an_ident ~ another_ident }}
+</span></pre>
+<p>An ident resolving to something other than a string will raise an error.</p>
+<h4 id="in-checking"><code>in</code> checking<a class="zola-anchor" href="#in-checking" aria-label="Anchor link for: in-checking">🔗</a></h4>
+<p>You can check whether a left side is contained in a right side using the <code>in</code> operator.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ some_var </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">[1, 2, 3] }}
+
+{{ </span><span style="color:#e6db74;">&#39;index&#39; </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">page.path }}
+
+{{ an_ident </span><span style="color:#f92672;">not in  </span><span style="color:#f8f8f2;">an_obj }}
+</span></pre>
+<p>Only literals/variables resulting in an array, a string and an object are supported in the right hand side: everything else
+will raise an error.</p>
+<h2 id="manipulating-data">Manipulating data<a class="zola-anchor" href="#manipulating-data" aria-label="Anchor link for: manipulating-data">🔗</a></h2>
+<h3 id="assignments">Assignments<a class="zola-anchor" href="#assignments" aria-label="Anchor link for: assignments">🔗</a></h3>
+<p>You can assign values to variables during the rendering.
+Assignments in for loops and macros are scoped to their context but
+assignments outside of those will be set in the global context.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#e6db74;">&quot;hello&quot; </span><span style="color:#f8f8f2;">%}
+{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;"> 1 </span><span style="color:#f92672;">+</span><span style="color:#f8f8f2;"> 4 %}
+{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">some_var %}
+{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">macros::some_macro() %}
+{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">global_fn() %}
+{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">[1, </span><span style="color:#ae81ff;">true</span><span style="color:#f8f8f2;">, some_var | round] %}
+</span></pre>
+<p>If you want to assign a value in the global context while in a for loop, you can use <code>set_global</code>:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">set_global </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#e6db74;">&quot;hello&quot; </span><span style="color:#f8f8f2;">%}
+{% </span><span style="color:#f92672;">set_global </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;"> 1 </span><span style="color:#f92672;">+</span><span style="color:#f8f8f2;"> 4 %}
+{% </span><span style="color:#f92672;">set_global </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">some_var %}
+{% </span><span style="color:#f92672;">set_global </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">macros::some_macro() %}
+{% </span><span style="color:#f92672;">set_global </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">global_fn() %}
+{% </span><span style="color:#f92672;">set_global </span><span style="color:#f8f8f2;">my_var </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">[1, </span><span style="color:#ae81ff;">true</span><span style="color:#f8f8f2;">, some_var | round] %}
+</span></pre>
+<p>Outside of a for loop, <code>set_global</code> is exactly the same as <code>set</code>.</p>
+<h3 id="filters">Filters<a class="zola-anchor" href="#filters" aria-label="Anchor link for: filters">🔗</a></h3>
+<p>You can modify variables using <strong>filters</strong>.
+Filters are separated from the variable by a pipe symbol (<code>|</code>) and may have named arguments in parentheses.
+Multiple filters can be chained: the output of one filter is applied to the next.</p>
+<p>For example, <code>{{ name | lower | replace(from=&quot;doctor&quot;, to=&quot;Dr.&quot;) }}</code> will take a variable called name, make it lowercase and then replace instances of <code>doctor</code> by <code>Dr.</code>.
+It is equivalent to <code>replace(lower(name), from=&quot;doctor&quot;, to=&quot;Dr.&quot;)</code> if we were to look at it as functions.</p>
+<p>Calling filters on a incorrect type like trying to capitalize an array or using invalid types for arguments will result in a error.</p>
+<p>Filters are functions with the <code>fn(Value, HashMap&lt;String, Value&gt;) -&gt; Result&lt;Value&gt;</code> definition and custom ones can be added like so:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">tera.</span><span style="color:#66d9ef;">register_filter</span><span style="color:#f8f8f2;">(</span><span style="color:#e6db74;">&quot;upper&quot;</span><span style="color:#f8f8f2;">, string::upper);
+</span></pre>
+<p>While filters can be used in math operations, they will have the lowest priority and therefore might not do what you expect:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ 1 + a | length }}
+// is equal to
+{{ (1 + a) | length } // this will probably error
+
+// This will do what you wanted initially
+{{ a | length + 1 }}
+</span></pre>
+<p>Tera has many <a href="https://tera.netlify.com/docs/#built-in-filters">built-in filters</a> that you can use.</p>
+<h4 id="filter-sections">Filter sections<a class="zola-anchor" href="#filter-sections" aria-label="Anchor link for: filter-sections">🔗</a></h4>
+<p>Whole sections can also be processed by filters if they are encapsulated in <code>{% filter name %}</code> and <code>{% endfilter %}</code>
+tags where <code>name</code> is the name of the filter:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">filter </span><span style="color:#f8f8f2;">upper %}
+    Hello
+{% </span><span style="color:#f92672;">endfilter </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>This example transforms the text <code>Hello</code> in all upper-case (<code>HELLO</code>).</p>
+<h3 id="tests">Tests<a class="zola-anchor" href="#tests" aria-label="Anchor link for: tests">🔗</a></h3>
+<p>Tests can be used against an expression to check some condition on it and
+are made in <code>if</code> blocks using the <code>is</code> keyword.
+For example, you would write the following to test if an expression is odd:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">my_number </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">odd %}
+ Odd
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>Tests can also be negated:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">my_number </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">not odd %}
+ Even
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>Tests are functions with the <code>fn(Option&lt;Value&gt;, Vec&lt;Value&gt;) -&gt; Result&lt;bool&gt;</code> definition and custom ones can be added like so:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">tera.</span><span style="color:#66d9ef;">register_tester</span><span style="color:#f8f8f2;">(</span><span style="color:#e6db74;">&quot;odd&quot;</span><span style="color:#f8f8f2;">, testers::odd);
+</span></pre>
+<p>Tera has many <a href="https://tera.netlify.com/docs/#built-in-tests">built-in tests</a> that you can use.</p>
+<h3 id="functions">Functions<a class="zola-anchor" href="#functions" aria-label="Anchor link for: functions">🔗</a></h3>
+<p>Functions are Rust code that return a <code>Result&lt;Value&gt;</code> from the given params.</p>
+<p>Quite often, functions will need to capture some external variables, such as a <code>url_for</code> global function needing
+the list of URLs for example.
+To make that work, the type of <code>GlobalFn</code> is a boxed closure: <code>Box&lt;Fn(HashMap&lt;String, Value&gt;) -&gt; Result&lt;Value&gt; + Sync + Send&gt;</code>.</p>
+<p>Here's an example on how to implement a very basic function:</p>
+<pre style="background-color:#272822;">
+<span style="font-style:italic;color:#66d9ef;">fn </span><span style="color:#a6e22e;">make_url_for</span><span style="color:#f8f8f2;">(</span><span style="font-style:italic;color:#fd971f;">urls</span><span style="color:#f8f8f2;">: BTreeMap&lt;String, String&gt;) -&gt; GlobalFn {
+    </span><span style="font-style:italic;color:#66d9ef;">Box</span><span style="color:#f8f8f2;">::new(</span><span style="color:#f92672;">move |</span><span style="color:#f8f8f2;">args</span><span style="color:#f92672;">| </span><span style="color:#f8f8f2;">-&gt; Result&lt;Value&gt; {
+        </span><span style="color:#f92672;">match</span><span style="color:#f8f8f2;"> args.</span><span style="color:#66d9ef;">get</span><span style="color:#f8f8f2;">(</span><span style="color:#e6db74;">&quot;name&quot;</span><span style="color:#f8f8f2;">) {
+            </span><span style="font-style:italic;color:#66d9ef;">Some</span><span style="color:#f8f8f2;">(val) </span><span style="color:#f92672;">=&gt; match </span><span style="color:#f8f8f2;">from_value::&lt;String&gt;(val.</span><span style="color:#66d9ef;">clone</span><span style="color:#f8f8f2;">()) {
+                </span><span style="font-style:italic;color:#66d9ef;">Ok</span><span style="color:#f8f8f2;">(v) </span><span style="color:#f92672;">=&gt;  </span><span style="font-style:italic;color:#66d9ef;">Ok</span><span style="color:#f8f8f2;">(</span><span style="color:#66d9ef;">to_value</span><span style="color:#f8f8f2;">(urls.</span><span style="color:#66d9ef;">get</span><span style="color:#f8f8f2;">(</span><span style="color:#f92672;">&amp;</span><span style="color:#f8f8f2;">v).</span><span style="color:#66d9ef;">unwrap</span><span style="color:#f8f8f2;">()).</span><span style="color:#66d9ef;">unwrap</span><span style="color:#f8f8f2;">()),
+                </span><span style="font-style:italic;color:#66d9ef;">Err</span><span style="color:#f8f8f2;">(</span><span style="color:#f92672;">_</span><span style="color:#f8f8f2;">) </span><span style="color:#f92672;">=&gt; </span><span style="font-style:italic;color:#66d9ef;">Err</span><span style="color:#f8f8f2;">(</span><span style="color:#e6db74;">&quot;oops&quot;</span><span style="color:#f8f8f2;">.</span><span style="color:#66d9ef;">into</span><span style="color:#f8f8f2;">()),
+            },
+            </span><span style="font-style:italic;color:#66d9ef;">None </span><span style="color:#f92672;">=&gt; </span><span style="font-style:italic;color:#66d9ef;">Err</span><span style="color:#f8f8f2;">(</span><span style="color:#e6db74;">&quot;oops&quot;</span><span style="color:#f8f8f2;">.</span><span style="color:#66d9ef;">into</span><span style="color:#f8f8f2;">()),
+        }
+    })
+}
+</span></pre>
+<p>You then need to add it to Tera:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">tera.</span><span style="color:#66d9ef;">register_function</span><span style="color:#f8f8f2;">(</span><span style="color:#e6db74;">&quot;url_for&quot;</span><span style="color:#f8f8f2;">, </span><span style="color:#66d9ef;">make_url_for</span><span style="color:#f8f8f2;">(urls));
+</span></pre>
+<p>And you can now call it from a template:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ url_for(name</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;home&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre>
+<p>Currently functions can be called in two places in templates:</p>
+<ul>
+<li>variable block: <code>{{ url_for(name=&quot;home&quot;) }}</code></li>
+<li>for loop container: <code>{% for i in range(end=5) %}</code></li>
+</ul>
+<p>Tera comes with some <a href="https://tera.netlify.com/docs/#built-in-functions">built-in functions</a>.</p>
+<h2 id="control-structures">Control structures<a class="zola-anchor" href="#control-structures" aria-label="Anchor link for: control-structures">🔗</a></h2>
+<h3 id="if">If<a class="zola-anchor" href="#if" aria-label="Anchor link for: if">🔗</a></h3>
+<p>Conditionals are fully supported and are identical to the ones in Python.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">price </span><span style="color:#f92672;">&lt;</span><span style="color:#f8f8f2;"> 10 </span><span style="color:#f92672;">or </span><span style="color:#f8f8f2;">always_show %}
+   Price is {{ price }}.
+{% </span><span style="color:#f92672;">elif </span><span style="color:#f8f8f2;">price </span><span style="color:#f92672;">&gt;</span><span style="color:#f8f8f2;"> 1000 </span><span style="color:#f92672;">and not </span><span style="color:#f8f8f2;">rich %}
+   That&#39;s expensive!
+{% </span><span style="color:#f92672;">else </span><span style="color:#f8f8f2;">%}
+    N/A
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>Undefined variables are considered falsy. This means that you can test for the
+presence of a variable in the current context by writing:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">my_var %}
+    {{ my_var }}
+{% </span><span style="color:#f92672;">else </span><span style="color:#f8f8f2;">%}
+    Sorry, my_var isn&#39;t defined.
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>Every <code>if</code> statement has to end with an <code>endif</code> tag.</p>
+<h3 id="for">For<a class="zola-anchor" href="#for" aria-label="Anchor link for: for">🔗</a></h3>
+<p>Loop over items in a array:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">product </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">products %}
+  {{loop.index}}. {{product.name}}
+{% </span><span style="color:#f92672;">endfor </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>A few special variables are available inside for loops:</p>
+<ul>
+<li><code>loop.index</code>: current iteration 1-indexed</li>
+<li><code>loop.index0</code>: current iteration 0-indexed</li>
+<li><code>loop.first</code>: whether this is the first iteration</li>
+<li><code>loop.last</code>: whether this is the last iteration</li>
+</ul>
+<p>Every <code>for</code> statement has to end with an <code>endfor</code> tag.</p>
+<p>You can also loop on maps and structs using the following syntax:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">key, value </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">products %}
+  {{loop.index}}. {{product.name}}
+{% </span><span style="color:#f92672;">endfor </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p><code>key</code> and <code>value</code> can be named however you want, they just need to be separated with a comma.</p>
+<p>If you are iterating on an array, you can also apply filters to the container:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">product </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">products | reverse %}
+  {{loop.index}}. {{product.name}}
+{% </span><span style="color:#f92672;">endfor </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>You can also iterate on array literals:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">a </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">[1,2,3,] %}
+  {{a}}
+{% </span><span style="color:#f92672;">endfor </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>Lastly, you can set a default body to be rendered when the container is empty:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% for product in products %}
+  {{loop.index}}. {{product.name}}
+{% else %}
+  No products.  
+{% endfor %}
+</span></pre><h4 id="loop-controls">Loop Controls<a class="zola-anchor" href="#loop-controls" aria-label="Anchor link for: loop-controls">🔗</a></h4>
+<p>Within a loop, <code>break</code> and <code>continue</code> may be used to control iteration.</p>
+<p>To stop iterating when <code>target_id</code> is reached:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">product </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">products %}
+  {% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">product.id </span><span style="color:#f92672;">== </span><span style="color:#f8f8f2;">target_id %}{% </span><span style="color:#f92672;">break </span><span style="color:#f8f8f2;">%}{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+  {{loop.index}}. {{product.name}}
+{% </span><span style="color:#f92672;">endfor </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>To skip even-numbered items:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">product </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">products %}
+  {% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">loop.index </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">even %}{% </span><span style="color:#f92672;">continue </span><span style="color:#f8f8f2;">%}{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+  {{loop.index}}. {{product.name}}
+{% </span><span style="color:#f92672;">endfor </span><span style="color:#f8f8f2;">%}
+</span></pre><h3 id="include">Include<a class="zola-anchor" href="#include" aria-label="Anchor link for: include">🔗</a></h3>
+<p>You can include a template to be rendered using the current context with the <code>include</code> tag.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% include &quot;included.html&quot; %}
+</span></pre>
+<p>Tera doesn't offer passing a custom context to the <code>include</code> tag.
+If you want to do that, use macros.</p>
+<p>While you can <code>set</code> values in included templates, those values only exist while rendering
+them: the template calling <code>include</code> doesn't see them.</p>
+<h3 id="macros">Macros<a class="zola-anchor" href="#macros" aria-label="Anchor link for: macros">🔗</a></h3>
+<p>Think of macros as functions or components that you can call and return some text.
+Macros currently need to be defined in a separate file and imported to be useable.</p>
+<p>They are defined as follows:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">macro </span><span style="color:#f8f8f2;">input(label, type</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;text&quot;</span><span style="color:#f8f8f2;">) %}
+    &lt;</span><span style="color:#f92672;">label</span><span style="color:#f8f8f2;">&gt;
+        {{ label }}
+        &lt;</span><span style="color:#f92672;">input </span><span style="color:#a6e22e;">type</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;{{type}}&quot;</span><span style="color:#f8f8f2;"> /&gt;
+    &lt;/</span><span style="color:#f92672;">label</span><span style="color:#f8f8f2;">&gt;
+{% </span><span style="color:#f92672;">endmacro </span><span style="color:#f8f8f2;">input %}
+</span></pre>
+<p>As shown in the example above, macro arguments can have a default <a href="https://tera.netlify.com/docs/#literals">literal</a> value.</p>
+<p>In order to use them, you need to import the file containing the macros:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">import </span><span style="color:#e6db74;">&quot;macros.html&quot; </span><span style="color:#f8f8f2;">as macros %}
+</span></pre>
+<p>You can name that file namespace (<code>macros</code> in the example) anything you want.
+A macro is called like this:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">// namespace::macro_name(**kwargs)
+{{ macros::input(label</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;Name&quot;</span><span style="color:#f8f8f2;">, type</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;text&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre>
+<p>Do note that macros, like filters, require keyword arguments.
+If you are trying to call a macro defined in the same file or itself, you will need to use the <code>self</code> namespace.
+The <code>self</code> namespace can only be used in macros.
+Macros can be called recursively but there is no limit to recursion so make sure your macro ends.</p>
+<p>Here's an example of a recursive macro:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">macro </span><span style="color:#f8f8f2;">factorial(n) %}
+  {% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">n </span><span style="color:#f92672;">&gt;</span><span style="color:#f8f8f2;"> 1 %}{{ n }} - {{ self::factorial(n</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">n</span><span style="color:#f92672;">-</span><span style="color:#f8f8f2;">1) }}{% </span><span style="color:#f92672;">else </span><span style="color:#f8f8f2;">%}1{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+{% </span><span style="color:#f92672;">endmacro </span><span style="color:#f8f8f2;">factorial %}
+</span></pre>
+<p>Macros body can contain all normal Tera syntax with the exception of macros definition, <code>block</code> and <code>extends</code>.</p>
+<h2 id="inheritance">Inheritance<a class="zola-anchor" href="#inheritance" aria-label="Anchor link for: inheritance">🔗</a></h2>
+<p>Tera uses the same kind of inheritance as Jinja2 and Django templates:
+you define a base template and extends it in child templates through blocks.
+There can be multiple levels of inheritance (i.e. A extends B that extends C).</p>
+<h3 id="base-template">Base template<a class="zola-anchor" href="#base-template" aria-label="Anchor link for: base-template">🔗</a></h3>
+<p>A base template typically contains the basic document structure as well as
+several <code>blocks</code> that can have content.</p>
+<p>For example, here's a <code>base.html</code> almost copied from the Jinja2 documentation:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">&lt;!</span><span style="color:#f92672;">DOCTYPE</span><span style="color:#f8f8f2;"> html&gt;
+&lt;</span><span style="color:#f92672;">html </span><span style="color:#a6e22e;">lang</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;en&quot;</span><span style="color:#f8f8f2;">&gt;
+&lt;</span><span style="color:#f92672;">head</span><span style="color:#f8f8f2;">&gt;
+    {% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">head %}
+    &lt;</span><span style="color:#f92672;">link </span><span style="color:#a6e22e;">rel</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;stylesheet&quot; </span><span style="color:#a6e22e;">href</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;style.css&quot;</span><span style="color:#f8f8f2;"> /&gt;
+    &lt;</span><span style="color:#f92672;">title</span><span style="color:#f8f8f2;">&gt;{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">title %}{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">title %} - My Webpage&lt;/</span><span style="color:#f92672;">title</span><span style="color:#f8f8f2;">&gt;
+    {% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">head %}
+&lt;/</span><span style="color:#f92672;">head</span><span style="color:#f8f8f2;">&gt;
+&lt;</span><span style="color:#f92672;">body</span><span style="color:#f8f8f2;">&gt;
+    &lt;</span><span style="color:#f92672;">div </span><span style="color:#a6e22e;">id</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;content&quot;</span><span style="color:#f8f8f2;">&gt;{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">content %}{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">content %}&lt;/</span><span style="color:#f92672;">div</span><span style="color:#f8f8f2;">&gt;
+    &lt;</span><span style="color:#f92672;">div </span><span style="color:#a6e22e;">id</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;footer&quot;</span><span style="color:#f8f8f2;">&gt;
+        {% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">footer %}
+        </span><span style="color:#ae81ff;">&amp;copy;</span><span style="color:#f8f8f2;"> Copyright 2008 by &lt;</span><span style="color:#f92672;">a </span><span style="color:#a6e22e;">href</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;http://domain.invalid/&quot;</span><span style="color:#f8f8f2;">&gt;you&lt;/</span><span style="color:#f92672;">a</span><span style="color:#f8f8f2;">&gt;.
+        {% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">footer %}
+    &lt;/</span><span style="color:#f92672;">div</span><span style="color:#f8f8f2;">&gt;
+&lt;/</span><span style="color:#f92672;">body</span><span style="color:#f8f8f2;">&gt;
+&lt;/</span><span style="color:#f92672;">html</span><span style="color:#f8f8f2;">&gt;
+</span></pre>
+<p>The only difference with Jinja2 being that the <code>endblock</code> tags have to be named.</p>
+<p>This <code>base.html</code> template defines 4 <code>block</code> tag that child templates can override.
+The <code>head</code> and <code>footer</code> block have some content already which will be rendered if they are not overridden.</p>
+<h3 id="child-template">Child template<a class="zola-anchor" href="#child-template" aria-label="Anchor link for: child-template">🔗</a></h3>
+<p>Again, straight from Jinja2 docs:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">extends </span><span style="color:#e6db74;">&quot;base.html&quot; </span><span style="color:#f8f8f2;">%}
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">title %}Index{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">title %}
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">head %}
+    {{ super() }}
+    &lt;</span><span style="color:#f92672;">style </span><span style="color:#a6e22e;">type</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;text/css&quot;</span><span style="color:#f8f8f2;">&gt;
+        </span><span style="color:#a6e22e;">.important </span><span style="color:#f8f8f2;">{ </span><span style="font-style:italic;color:#66d9ef;">color</span><span style="color:#f8f8f2;">: </span><span style="color:#ae81ff;">#336699</span><span style="color:#f8f8f2;">; }
+    &lt;/</span><span style="color:#f92672;">style</span><span style="color:#f8f8f2;">&gt;
+{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">head %}
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">content %}
+    &lt;</span><span style="color:#f92672;">h1</span><span style="color:#f8f8f2;">&gt;Index&lt;/</span><span style="color:#f92672;">h1</span><span style="color:#f8f8f2;">&gt;
+    &lt;</span><span style="color:#f92672;">p </span><span style="color:#a6e22e;">class</span><span style="color:#f8f8f2;">=</span><span style="color:#e6db74;">&quot;important&quot;</span><span style="color:#f8f8f2;">&gt;
+      Welcome to my awesome homepage.
+    &lt;/</span><span style="color:#f92672;">p</span><span style="color:#f8f8f2;">&gt;
+{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">content %}
+</span></pre>
+<p>To indicate inheritance, you have use the <code>extends</code> tag as the first thing in the file followed by the name of the template you want
+to extend.
+The <code>{{ super() }}</code> variable call tells Tera to render the parent block there.</p>
+<p>Nested blocks also work in Tera. Consider the following templates:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">// grandparent
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">hey %}hello{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">hey %}
+
+// parent
+{% </span><span style="color:#f92672;">extends </span><span style="color:#e6db74;">&quot;grandparent&quot; </span><span style="color:#f8f8f2;">%}
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">hey %}hi and grandma says {{ super() }} {% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">ending %}sincerely{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">ending %}{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">hey %}
+
+// child
+{% </span><span style="color:#f92672;">extends </span><span style="color:#e6db74;">&quot;parent&quot; </span><span style="color:#f8f8f2;">%}
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">hey %}dad says {{ super() }}{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">hey %}
+{% </span><span style="color:#f92672;">block </span><span style="color:#f8f8f2;">ending %}{{ super() }} with love{% </span><span style="color:#f92672;">endblock </span><span style="color:#f8f8f2;">ending %}
+</span></pre>
+<p>The block <code>ending</code> is nested in the <code>hey</code> block. Rendering the <code>child</code> template will do the following:</p>
+<ul>
+<li>Find the first base template: <code>grandparent</code></li>
+<li>See <code>hey</code> block in it and checks if it is in <code>child</code> and <code>parent</code> template</li>
+<li>It is in <code>child</code> so we render it, it contains a <code>super()</code> call so we render the <code>hey</code> block from <code>parent</code>,
+which also contains a <code>super()</code> so we render the <code>hey</code> block of the <code>grandparent</code> template as well</li>
+<li>See <code>ending</code> block in <code>child</code>, render it and also renders the <code>ending</code> block of <code>parent</code> as there is a <code>super()</code></li>
+</ul>
+<p>The end result of that rendering (not counting whitespace) will be: &quot;dad says hi and grandma says hello sincerely with love&quot;.</p>
+<h2 id="built-ins">Built-ins<a class="zola-anchor" href="#built-ins" aria-label="Anchor link for: built-ins">🔗</a></h2>
+<h3 id="built-in-filters">Built-in filters<a class="zola-anchor" href="#built-in-filters" aria-label="Anchor link for: built-in-filters">🔗</a></h3>
+<p>Tera has the following filters built-in:</p>
+<h4 id="lower">lower<a class="zola-anchor" href="#lower" aria-label="Anchor link for: lower">🔗</a></h4>
+<p>Lowercase a string</p>
+<h4 id="wordcount">wordcount<a class="zola-anchor" href="#wordcount" aria-label="Anchor link for: wordcount">🔗</a></h4>
+<p>Returns number of words in a string</p>
+<h4 id="capitalize">capitalize<a class="zola-anchor" href="#capitalize" aria-label="Anchor link for: capitalize">🔗</a></h4>
+<p>Returns the string with all its character lowercased apart from the first char which is uppercased.</p>
+<h4 id="replace">replace<a class="zola-anchor" href="#replace" aria-label="Anchor link for: replace">🔗</a></h4>
+<p>Takes 2 mandatory string named arguments: <code>from</code> and <code>to</code>. It will return a string with all instances of
+the <code>from</code> string with the <code>to</code> string.</p>
+<p>Example: <code>{{ name | replace(from=&quot;Robert&quot;, to=&quot;Bob&quot;)}}</code></p>
+<h4 id="addslashes">addslashes<a class="zola-anchor" href="#addslashes" aria-label="Anchor link for: addslashes">🔗</a></h4>
+<p>Adds slashes before quotes.</p>
+<p>Example: <code>{{ value | addslashes }}</code></p>
+<p>If value is &quot;I'm using Tera&quot;, the output will be &quot;I\'m using Tera&quot;.</p>
+<h4 id="slugify">slugify<a class="zola-anchor" href="#slugify" aria-label="Anchor link for: slugify">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Transform a string into ASCII, lowercase it, trim it, converts spaces to hyphens and
+remove all characters that are not numbers, lowercase letters or hyphens.</p>
+<p>Example: <code>{{ value | slugify }}</code></p>
+<p>If value is &quot;-Hello world! &quot;, the output will be &quot;hello-world&quot;.</p>
+<h4 id="title">title<a class="zola-anchor" href="#title" aria-label="Anchor link for: title">🔗</a></h4>
+<p>Capitalizes each word inside a sentence.</p>
+<p>Example: <code>{{ value | title }}</code></p>
+<p>If value is &quot;foo  bar&quot;, the output will be &quot;Foo  Bar&quot;.</p>
+<h4 id="trim">trim<a class="zola-anchor" href="#trim" aria-label="Anchor link for: trim">🔗</a></h4>
+<p>Remove leading and trailing whitespace if the variable is a string.</p>
+<h4 id="truncate">truncate<a class="zola-anchor" href="#truncate" aria-label="Anchor link for: truncate">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Truncates a string to the indicated length. If the string has a smaller length than
+the <code>length</code> argument, the string is returned as is.</p>
+<p>Example: <code>{{ value | truncate(length=10) }}</code></p>
+<p>By default, the filter will add an ellipsis at the end if the text was truncated. You can
+change the string appended by setting the <code>end</code> argument.
+For example, <code>{{ value | truncate(length=10, end=&quot;&quot;) }}</code> will not append anything.</p>
+<h4 id="striptags">striptags<a class="zola-anchor" href="#striptags" aria-label="Anchor link for: striptags">🔗</a></h4>
+<p>Tries to remove HTML tags from input. Does not guarantee well formed output if input is not valid HTML.</p>
+<p>Example: <code>{{ value | striptags}}</code></p>
+<p>If value is &quot;&lt;b&gt;Joel&lt;/b&gt;&quot;, the output will be &quot;Joel&quot;.</p>
+<p>Note that if the template you using it in is automatically escaped, you will need to call the <code>safe</code> filter
+before <code>striptags</code>.</p>
+<h4 id="first">first<a class="zola-anchor" href="#first" aria-label="Anchor link for: first">🔗</a></h4>
+<p>Returns the first element of an array.
+If the array is empty, returns empty string.</p>
+<h4 id="last">last<a class="zola-anchor" href="#last" aria-label="Anchor link for: last">🔗</a></h4>
+<p>Returns the last element of an array.
+If the array is empty, returns empty string.</p>
+<h4 id="nth">nth<a class="zola-anchor" href="#nth" aria-label="Anchor link for: nth">🔗</a></h4>
+<p>Returns the nth element of an array.§
+If the array is empty, returns empty string.
+It takes a required <code>n</code> argument, corresponding to the 0-based index you want to get.</p>
+<p>Example: <code>{{ value | nth(n=2) }}</code></p>
+<h4 id="join">join<a class="zola-anchor" href="#join" aria-label="Anchor link for: join">🔗</a></h4>
+<p>Joins an array with a string.</p>
+<p>Example: <code>{{ value | join(sep=&quot; // &quot;) }}</code></p>
+<p>If value is the array <code>['a', 'b', 'c']</code>, the output will be the string &quot;a // b // c&quot;.</p>
+<h4 id="length">length<a class="zola-anchor" href="#length" aria-label="Anchor link for: length">🔗</a></h4>
+<p>Returns the length of an array, an object, or a string.</p>
+<h4 id="reverse">reverse<a class="zola-anchor" href="#reverse" aria-label="Anchor link for: reverse">🔗</a></h4>
+<p>Returns a reversed string or array.</p>
+<h4 id="sort">sort<a class="zola-anchor" href="#sort" aria-label="Anchor link for: sort">🔗</a></h4>
+<p>Sorts an array into ascending order.</p>
+<p>The values in the array must be a sortable type:</p>
+<ul>
+<li>numbers are sorted by their numerical value.</li>
+<li>strings are sorted in alphabetical order.</li>
+<li>arrays are sorted by their length.</li>
+<li>bools are sorted as if false=0 and true=1</li>
+</ul>
+<p>If you need to sort a list of structs or tuples, use the <code>attribute</code>
+argument to specify which field to sort by.</p>
+<p>Example:</p>
+<p>Given <code>people</code> is an array of Person</p>
+<pre style="background-color:#272822;">
+<span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Name(String, String);
+
+</span><span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Person {
+    name: Name,
+    age: </span><span style="font-style:italic;color:#66d9ef;">u32</span><span style="color:#f8f8f2;">,
+}
+</span></pre>
+<p>The <code>attribute</code> argument can be used to sort by last name:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ people | sort(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;name.1&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre>
+<p>or by age:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ people | sort(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;age&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre><h4 id="unique">unique<a class="zola-anchor" href="#unique" aria-label="Anchor link for: unique">🔗</a></h4>
+<p>Removes duplicate items from an array.  The <code>attribute</code> argument can be used to select items based on the values of an inner attribute.  For strings, the <code>case_sensitive</code> argument (default is false) can be used to control the comparison.</p>
+<p>Example:</p>
+<p>Given <code>people</code> is an array of Person</p>
+<pre style="background-color:#272822;">
+<span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Name(String, String);
+
+</span><span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Person {
+    name: Name,
+    age: </span><span style="font-style:italic;color:#66d9ef;">u32</span><span style="color:#f8f8f2;">,
+}
+</span></pre>
+<p>The <code>attribute</code> argument can be used to select one Person for each age:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ people | unique(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;age&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre>
+<p>or by last name:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ people | unique(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;name.1&quot;</span><span style="color:#f8f8f2;">, case_sensitive</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;true&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre><h4 id="slice">slice<a class="zola-anchor" href="#slice" aria-label="Anchor link for: slice">🔗</a></h4>
+<p>Slice an array by the given <code>start</code> and <code>end</code> parameter. Both parameters are
+optional and omitting them will return the same array.
+Use the <code>start</code> argument to define where to start (inclusive, default to <code>0</code>)
+and <code>end</code> argument to define where to stop (exclusive, default to the length of the array).
+<code>start</code> and <code>end</code> are 0-indexed.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">i </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">my_arr | slice(end</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">5) %}
+{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">i </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">my_arr | slice(start</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">1) %}
+{% </span><span style="color:#f92672;">for </span><span style="color:#f8f8f2;">i </span><span style="color:#f92672;">in </span><span style="color:#f8f8f2;">my_arr | slice(start</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">1, end</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">5) %}
+</span></pre><h4 id="group-by">group_by<a class="zola-anchor" href="#group-by" aria-label="Anchor link for: group-by">🔗</a></h4>
+<p>Group an array using the required <code>attribute</code> argument. The filter takes an array and return
+a map where the keys are the values of the <code>attribute</code> stringified and the values are all elements of
+the initial array having that <code>attribute</code>. Values with missing <code>attribute</code> or where <code>attribute</code> is null
+will be discarded.</p>
+<p>Example:</p>
+<p>Given <code>posts</code> is an array of Post</p>
+<pre style="background-color:#272822;">
+<span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Author {
+    name: String,
+};
+
+</span><span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Post {
+    content: String,
+    year: </span><span style="font-style:italic;color:#66d9ef;">u32</span><span style="color:#f8f8f2;">,
+    author: Author,
+}
+</span></pre>
+<p>The <code>attribute</code> argument can be used to group posts by year:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ posts | group_by(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;year&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre>
+<p>or by author name:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ posts | group_by(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;author.name&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre><h4 id="filter">filter<a class="zola-anchor" href="#filter" aria-label="Anchor link for: filter">🔗</a></h4>
+<p>Filter the array values, returning only the values where the <code>attribute</code> is equal to the <code>value</code>.
+Values with missing <code>attribute</code> or where <code>attribute</code> is null will be discarded.</p>
+<p>Both <code>attribute</code> and <code>value</code> are mandatory.</p>
+<p>Example:</p>
+<p>Given <code>posts</code> is an array of Post</p>
+<pre style="background-color:#272822;">
+<span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Author {
+    name: String,
+};
+
+</span><span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Post {
+    content: String,
+    year: </span><span style="font-style:italic;color:#66d9ef;">u32</span><span style="color:#f8f8f2;">,
+    author: Author,
+    draft: </span><span style="font-style:italic;color:#66d9ef;">bool</span><span style="color:#f8f8f2;">,
+}
+</span></pre>
+<p>The <code>attribute</code> argument can be used to filter posts by draft value:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ posts | filter(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;draft&quot;</span><span style="color:#f8f8f2;">, value</span><span style="color:#f92672;">=</span><span style="color:#ae81ff;">true</span><span style="color:#f8f8f2;">) }}
+</span></pre>
+<p>or by author name:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ posts | filter(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;author.name&quot;</span><span style="color:#f8f8f2;">, value</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;Vincent&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre><h4 id="map">map<a class="zola-anchor" href="#map" aria-label="Anchor link for: map">🔗</a></h4>
+<p>Retrieves an attribute from each object in an array.  The <code>attribute</code> argument is mandatory and specifies what to extract.</p>
+<p>Example:</p>
+<p>Given <code>people</code> is an array of Person</p>
+<pre style="background-color:#272822;">
+<span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Name(String, String);
+
+</span><span style="font-style:italic;color:#66d9ef;">struct </span><span style="color:#f8f8f2;">Person {
+    name: Name,
+    age: </span><span style="font-style:italic;color:#66d9ef;">u32</span><span style="color:#f8f8f2;">,
+}
+</span></pre>
+<p>The <code>attribute</code> argument is used to retrieve their ages.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ people | map(attribute</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;age&quot;</span><span style="color:#f8f8f2;">) }}
+</span></pre><h4 id="concat">concat<a class="zola-anchor" href="#concat" aria-label="Anchor link for: concat">🔗</a></h4>
+<p>Appends values to an array.</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ posts | concat(with</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">drafts) }}
+</span></pre>
+<p>The filter takes an array and returns a new array with the value(s) from the <code>with</code> parameter
+added. If the <code>with</code> parameter is an array, all of its values will be appended one by one to the new array and
+not as an array.</p>
+<p>This filter can also be used to append a single value to an array if the value passed to <code>with</code> is not an array:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">set </span><span style="color:#f8f8f2;">pages_id </span><span style="color:#f92672;">= </span><span style="color:#f8f8f2;">pages_id | concat(with</span><span style="color:#f92672;">=</span><span style="color:#f8f8f2;">id) %}
+</span></pre>
+<p>The <code>with</code> attribute is mandatory.</p>
+<h4 id="urlencode">urlencode<a class="zola-anchor" href="#urlencode" aria-label="Anchor link for: urlencode">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Percent-encodes a string.</p>
+<p>Example: <code>{{ value | urlencode }}</code></p>
+<p>If value is <code>/foo?a=b&amp;c=d</code>, the output will be <code>/foo%3Fa%3Db%26c%3Dd</code>. <code>/</code> is not escaped.</p>
+<h4 id="pluralize">pluralize<a class="zola-anchor" href="#pluralize" aria-label="Anchor link for: pluralize">🔗</a></h4>
+<p>Returns a plural suffix if the value is not equal to ±1, or a singular suffix otherwise. The plural suffix defaults to <code>s</code> and the
+singular suffix defaults to the empty string (i.e nothing).</p>
+<p>Example: <code>You have {{ num_messages }} message{{ num_messages | pluralize }}</code></p>
+<p>If num_messages is 1, the output will be You have 1 message. If num_messages is 2 the output will be You have 2 messages. You can
+also customize the singular and plural suffixes with the <code>singular</code> and <code>plural</code> arguments to the filter:</p>
+<p>Example: <code>{{ num_categories }} categor{{ num_categories | pluralize(singular=&quot;y&quot;, plural=&quot;ies&quot;) }}</code></p>
+<h4 id="round">round<a class="zola-anchor" href="#round" aria-label="Anchor link for: round">🔗</a></h4>
+<p>Returns a number rounded following the method given. Default method is <code>common</code> which will round to the nearest integer.
+<code>ceil</code> and <code>floor</code> are available as alternative methods.
+Another optional argument, <code>precision</code>, is available to select the precision of the rounding. It defaults to <code>0</code>, which will
+round to the nearest integer for the given method.</p>
+<p>Example: <code>{{ num | round }} {{ num | round(method=&quot;ceil&quot;, precision=2) }}</code></p>
+<h4 id="filesizeformat">filesizeformat<a class="zola-anchor" href="#filesizeformat" aria-label="Anchor link for: filesizeformat">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Returns a human-readable file size (i.e. '110 MB') from an integer.</p>
+<p>Example: <code>{{ num | filesizeformat }}</code></p>
+<h4 id="date">date<a class="zola-anchor" href="#date" aria-label="Anchor link for: date">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Parse a timestamp into a date(time) string. Defaults to <code>YYYY-MM-DD</code> format.
+Time formatting syntax is inspired from strftime and a full reference is available
+on <a href="https://lifthrasiir.github.io/rust-chrono/chrono/format/strftime/index.html">chrono docs</a>.</p>
+<p>Example: <code>{{ ts | date }} {{ ts | date(format=&quot;%Y-%m-%d %H:%M&quot;) }}</code></p>
+<p>If you are using ISO 8601 date strings you can optionally supply a timezone for the date to be rendered in.</p>
+<p>Example:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{{ &quot;2019-09-19T13:18:48.731Z&quot; | date(timezone=&quot;America/New_York&quot;) }}
+
+{{ &quot;2019-09-19T13:18:48.731Z&quot; | date(format=&quot;%Y-%m-%d %H:%M&quot;, timezone=&quot;Asia/Shanghai&quot;) }}
+</span></pre><h4 id="escape">escape<a class="zola-anchor" href="#escape" aria-label="Anchor link for: escape">🔗</a></h4>
+<p>Escapes a string's HTML. Specifically, it makes these replacements:</p>
+<ul>
+<li><code>&amp;</code> is converted to <code>&amp;amp;</code></li>
+<li><code>&lt;</code> is converted to <code>&amp;lt;</code></li>
+<li><code>&gt;</code> is converted to <code>&amp;gt;</code></li>
+<li><code>&quot;</code> (double quote) is converted to <code>&amp;quot;</code></li>
+<li><code>'</code> (single quote) is converted to <code>&amp;#x27;</code></li>
+<li><code>/</code> is converted to <code>&amp;#x2F;</code></li>
+</ul>
+<h4 id="escape-xml">escape_xml<a class="zola-anchor" href="#escape-xml" aria-label="Anchor link for: escape-xml">🔗</a></h4>
+<p>Escapes XML special characters. Specifically, it makes these replacements:</p>
+<ul>
+<li><code>&amp;</code> is converted to <code>&amp;amp;</code></li>
+<li><code>&lt;</code> is converted to <code>&amp;lt;</code></li>
+<li><code>&gt;</code> is converted to <code>&amp;gt;</code></li>
+<li><code>&quot;</code> (double quote) is converted to <code>&amp;quot;</code></li>
+<li><code>'</code> (single quote) is converted to <code>&amp;apos;</code></li>
+</ul>
+<h4 id="safe">safe<a class="zola-anchor" href="#safe" aria-label="Anchor link for: safe">🔗</a></h4>
+<p>Mark a variable as safe: HTML will not be escaped anymore.
+<code>safe</code> only works if it is the last filter of the expression:</p>
+<ul>
+<li><code>{{ content | replace(from=&quot;Robert&quot;, to=&quot;Bob&quot;) | safe }}</code> will not be escaped</li>
+<li><code>{{ content | safe | replace(from=&quot;Robert&quot;, to=&quot;Bob&quot;) }}</code> will be escaped</li>
+</ul>
+<h4 id="get">get<a class="zola-anchor" href="#get" aria-label="Anchor link for: get">🔗</a></h4>
+<p>Access a value from an object when the key is not a Tera identifier.
+Example: <code>{{ sections | get(key=&quot;posts/content&quot;) }}</code></p>
+<h4 id="split">split<a class="zola-anchor" href="#split" aria-label="Anchor link for: split">🔗</a></h4>
+<p>Split a string into an array of strings, separated by a pattern given.
+Example: <code>{{ path | split(pat=&quot;/&quot;) }}</code></p>
+<h4 id="int">int<a class="zola-anchor" href="#int" aria-label="Anchor link for: int">🔗</a></h4>
+<p>Converts a value into an integer.  The <code>default</code> argument can be used to specify the value to return on error, and the <code>base</code> argument can be used to specify how to interpret the number.  Bases of 2, 8, and 16 understand the prefix 0b, 0o, 0x, respectively.</p>
+<h4 id="float">float<a class="zola-anchor" href="#float" aria-label="Anchor link for: float">🔗</a></h4>
+<p>Converts a value into a float.  The <code>default</code> argument can be used to specify the value to return on error.</p>
+<h4 id="json-encode">json_encode<a class="zola-anchor" href="#json-encode" aria-label="Anchor link for: json-encode">🔗</a></h4>
+<p>Transforms any value into a JSON representation. This filter is better used together with <code>safe</code> or when automatic escape is disabled.</p>
+<p>Example: <code>{{ value | safe | json_encode() }}</code></p>
+<p>It accepts a parameter <code>pretty</code> (boolean) to print a formatted JSON instead of a one-liner.</p>
+<p>Example: <code>{{ value | safe | json_encode(pretty=true) }}</code></p>
+<h4 id="as-str">as_str<a class="zola-anchor" href="#as-str" aria-label="Anchor link for: as-str">🔗</a></h4>
+<p>Returns a string representation of the given value.</p>
+<p>Example: <code>{{ value | as_str }}</code></p>
+<h4 id="default">default<a class="zola-anchor" href="#default" aria-label="Anchor link for: default">🔗</a></h4>
+<p>Returns the default value given only if the variable evaluated is not present in the context
+and is therefore meant to be at the beginning of a filter chain if there are several filters.</p>
+<p>Example: <code>{{ value | default(value=1) }}</code></p>
+<p>This is in most cases a shortcut for:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">value %}{{ value }}{% </span><span style="color:#f92672;">else </span><span style="color:#f8f8f2;">%}1{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>However, only the existence of the value in the context is checked. With a value that <code>if</code> would
+evaluate to false (such as an empty string, or the number 0), the <code>default</code> filter will not attempt
+replace it with the alternate value provided. For example, the following will produce
+&quot;I would like to read more !&quot;:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">I would like to read more {{ </span><span style="color:#e6db74;">&quot;&quot; </span><span style="color:#f8f8f2;">| default (value</span><span style="color:#f92672;">=</span><span style="color:#e6db74;">&quot;Louise Michel&quot;</span><span style="color:#f8f8f2;">) }}!
+</span></pre>
+<p>If you intend to use the default filter to deal with optional values, you should make sure those values
+aren't set! Otherwise, use a full <code>if</code> block. This is especially relevant for dealing with optional arguments
+passed to a macro.</p>
+<h3 id="built-in-tests">Built-in tests<a class="zola-anchor" href="#built-in-tests" aria-label="Anchor link for: built-in-tests">🔗</a></h3>
+<p>Here are the currently built-in tests:</p>
+<h4 id="defined">defined<a class="zola-anchor" href="#defined" aria-label="Anchor link for: defined">🔗</a></h4>
+<p>Returns true if the given variable is defined.</p>
+<h4 id="undefined">undefined<a class="zola-anchor" href="#undefined" aria-label="Anchor link for: undefined">🔗</a></h4>
+<p>Returns true if the given variable is undefined.</p>
+<h4 id="odd">odd<a class="zola-anchor" href="#odd" aria-label="Anchor link for: odd">🔗</a></h4>
+<p>Returns true if the given variable is an odd number.</p>
+<h4 id="even">even<a class="zola-anchor" href="#even" aria-label="Anchor link for: even">🔗</a></h4>
+<p>Returns true if the given variable is an even number.</p>
+<h4 id="string">string<a class="zola-anchor" href="#string" aria-label="Anchor link for: string">🔗</a></h4>
+<p>Returns true if the given variable is a string.</p>
+<h4 id="number">number<a class="zola-anchor" href="#number" aria-label="Anchor link for: number">🔗</a></h4>
+<p>Returns true if the given variable is a number.</p>
+<h4 id="divisibleby">divisibleby<a class="zola-anchor" href="#divisibleby" aria-label="Anchor link for: divisibleby">🔗</a></h4>
+<p>Returns true if the given expression is divisible by the arg given.</p>
+<p>Example:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">rating </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">divisibleby(2) %}
+    Divisible
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre><h4 id="iterable">iterable<a class="zola-anchor" href="#iterable" aria-label="Anchor link for: iterable">🔗</a></h4>
+<p>Returns true if the given variable can be iterated over in Tera (ie is an array/tuple or an object).</p>
+<h4 id="object">object<a class="zola-anchor" href="#object" aria-label="Anchor link for: object">🔗</a></h4>
+<p>Returns true if the given variable is an object (ie can be iterated over key, value).</p>
+<h4 id="starting-with">starting_with<a class="zola-anchor" href="#starting-with" aria-label="Anchor link for: starting-with">🔗</a></h4>
+<p>Returns true if the given variable is a string starts with the arg given.</p>
+<p>Example:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">path </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">starting_with(</span><span style="color:#e6db74;">&quot;x/&quot;</span><span style="color:#f8f8f2;">) %}
+    In section x
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre><h4 id="ending-with">ending_with<a class="zola-anchor" href="#ending-with" aria-label="Anchor link for: ending-with">🔗</a></h4>
+<p>Returns true if the given variable is a string ends with the arg given.</p>
+<h4 id="containing">containing<a class="zola-anchor" href="#containing" aria-label="Anchor link for: containing">🔗</a></h4>
+<p>Returns true if the given variable contains the arg given.</p>
+<p>The test works on:</p>
+<ul>
+<li>strings: is the arg a substring?</li>
+<li>arrays: is the arg given one of the member of the array?</li>
+<li>maps: is the arg given a key of the map?</li>
+</ul>
+<p>Example:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">username </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">containing(</span><span style="color:#e6db74;">&quot;xXx&quot;</span><span style="color:#f8f8f2;">) %}
+    Bad
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre><h4 id="matching">matching<a class="zola-anchor" href="#matching" aria-label="Anchor link for: matching">🔗</a></h4>
+<p>Returns true if the given variable is a string and matches the regex in the argument.</p>
+<p>Example:</p>
+<pre style="background-color:#272822;">
+<span style="color:#f8f8f2;">{% </span><span style="color:#f92672;">if </span><span style="color:#f8f8f2;">name </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">matching(</span><span style="color:#e6db74;">&quot;^[Qq]ueen&quot;</span><span style="color:#f8f8f2;">) %}
+    Her Royal Highness, {{ name }}
+{% </span><span style="color:#f92672;">elif </span><span style="color:#f8f8f2;">name </span><span style="color:#f92672;">is </span><span style="color:#f8f8f2;">matching(</span><span style="color:#e6db74;">&quot;^[Kk]ing&quot;</span><span style="color:#f8f8f2;">) %}
+    His Royal Highness, {{ name }}
+{% </span><span style="color:#f92672;">else </span><span style="color:#f8f8f2;">%}
+    {{ name }}
+{% </span><span style="color:#f92672;">endif </span><span style="color:#f8f8f2;">%}
+</span></pre>
+<p>A comprehensive syntax description can be found in the <a href="https://docs.rs/regex/">regex crate documentation</a>.</p>
+<h3 id="built-in-functions">Built-in functions<a class="zola-anchor" href="#built-in-functions" aria-label="Anchor link for: built-in-functions">🔗</a></h3>
+<p>Tera comes with some built-in global functions.</p>
+<h4 id="range">range<a class="zola-anchor" href="#range" aria-label="Anchor link for: range">🔗</a></h4>
+<p>Returns an array of integers created using the arguments given.
+There are 3 arguments, all integers:</p>
+<ul>
+<li><code>end</code>: where to stop, mandatory</li>
+<li><code>start</code>: where to start from, defaults to <code>0</code></li>
+<li><code>step_by</code>: with what number do we increment, defaults to <code>1</code></li>
+</ul>
+<h4 id="now">now<a class="zola-anchor" href="#now" aria-label="Anchor link for: now">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Returns the local datetime as string or the timestamp as integer if requested.</p>
+<p>There are 2 arguments, both booleans:</p>
+<ul>
+<li><code>timestamp</code>: whether to return the timestamp instead of the datetime</li>
+<li><code>utc</code>: whether to return the UTC datetime instead of the local one</li>
+</ul>
+<p>Formatting is not built-in the global function but you can use the <code>date</code> filter like so <code>now() | date(format=&quot;%Y&quot;)</code> if you
+wanted to get the current year.</p>
+<h4 id="throw">throw<a class="zola-anchor" href="#throw" aria-label="Anchor link for: throw">🔗</a></h4>
+<p>The template rendering will error with the given message when encountered.</p>
+<p>There is only one string argument:</p>
+<ul>
+<li><code>message</code>: the message to display as the error</li>
+</ul>
+<h4 id="get-random">get_random<a class="zola-anchor" href="#get-random" aria-label="Anchor link for: get-random">🔗</a></h4>
+<p>Only available if the <code>builtins</code> feature is enabled.</p>
+<p>Returns a random integer in the given range. There are 2 arguments, both integers:</p>
+<ul>
+<li><code>start</code>: defaults to 0 if not present</li>
+<li><code>end</code>: required</li>
+</ul>
+<p><code>start</code> is inclusive (i.e. can be returned) and <code>end</code> is exclusive.</p>
+<h4 id="get-env">get_env<a class="zola-anchor" href="#get-env" aria-label="Anchor link for: get-env">🔗</a></h4>
+<p>Returns the environment variable value for the name given. It will error if the environment variable is not found
+but the call can also take a default value instead.</p>
+<ul>
+<li><code>name</code>: the name of the environment variable to look for, required</li>
+<li><code>default</code>: a default value in case the environment variable is not found</li>
+</ul>
+<p>If the environment variable is found, it will always be a string while your default could be of any type.</p>
+
+            
+        </main>
+    </div>
+
+
+        <footer>
+            <div class="container">
+                © 2017-2019 Vincent Prouillet
+            </div>
+        </footer>
+    </body>
+</html>

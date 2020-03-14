@@ -1,6 +1,8 @@
 # tachyon
 A web-templating system with a RESTful API
 
+По [ссылке](http://35.228.134.188:5001) можно ознакомится с функционированием сервиса
+
 # Лабораторная работа №1
 ### 1. Идентификатор прецедента
 
@@ -68,3 +70,12 @@ A web-templating system with a RESTful API
 * Номинальная частота повторения прецедента: Раз в жизнь + по мере необходимости
 
 * Продолжительность прецедента: 40 ак.часа = 30 нормочаса
+
+### 11. Диаграмма uml use case
+![none](https://github.com/bobs4462/tachyon/blob/master/docs/images/uml_use_case.png)
+# Лабораторная работа №2
+
+### 1. Диаграмма uml use class
+![none](https://github.com/bobs4462/tachyon/blob/master/docs/images/uml_class.png)
+
+
