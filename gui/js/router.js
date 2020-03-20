@@ -1,6 +1,6 @@
 import { Render } from "../controllers/render.js"
 import { SyntaxDoc } from "../controllers/syntaxdoc.js"
-import { APIWorkInProgress } from "../controllers/api_work_in_progress.js"
+import { API } from "../controllers/apidoc.js"
 import { New } from "../controllers/new.js"
 import { Templates } from "../controllers/templates.js"
 
@@ -15,7 +15,7 @@ const routes = [
 	},
 	{
 		path: '/api-docs',
-		component: APIWorkInProgress
+		component: API
 	},
 	{
 		path: '/new',
