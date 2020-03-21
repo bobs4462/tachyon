@@ -2,6 +2,7 @@ use futures::stream::StreamExt;
 use std::io::Write;
 use tachyon::router::route;
 use tokio::net::TcpListener;
+use tokio::time::{timeout, Duration};
 
 #[tokio::main]
 async fn main() {
@@ -22,7 +23,7 @@ async fn main() {
         while let Some(con) = incoming.next().await {
             match con {
                 Ok(socket) => {
-                    tokio::spawn(route(socket));
+                    tokio::spawn(timeout(Duration::from_secs(10), route(socket)));
                 }
                 Err(err) => {
                     eprintln!("Error on getting connection = {:?}", err);
