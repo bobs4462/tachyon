@@ -23,7 +23,9 @@ async fn main() {
         while let Some(con) = incoming.next().await {
             match con {
                 Ok(socket) => {
-                    tokio::spawn(timeout(Duration::from_secs(10), route(socket)));
+                    timeout(Duration::from_secs(10), route(socket))
+                        .await
+                        .unwrap();
                 }
                 Err(err) => {
                     eprintln!("Error on getting connection = {:?}", err);
