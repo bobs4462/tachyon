@@ -27,6 +27,9 @@ pub async fn route(mut socket: TcpStream) {
             loop {
                 if cl > body.len() {
                     let data = request::read(&mut socket).await;
+                    if data.len() == 0 {
+                        panic!("CONNECTION TIMEOUT");
+                    }
                     body.extend(&data);
                 } else {
                     break;
