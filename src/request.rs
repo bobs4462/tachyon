@@ -1,7 +1,7 @@
 use httparse::{Header, Request, Status};
 use tokio::net::TcpStream;
 use tokio::prelude::*;
-const BUF_SIZE: usize = 4096;
+const BUF_SIZE: usize = 65536;
 // use tokio::time::{timeout, Duration};
 
 #[derive(Debug)]
